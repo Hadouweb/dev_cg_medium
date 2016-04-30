@@ -55,8 +55,8 @@ class Player
                 }
                 //Console.Error.WriteLine();
             }
-            int col = GetHeightCol(map, c);
             int rot = GetRot0(map, c);
+            int col = GetHeightCol(map, c, rot);
             Console.Error.WriteLine("Rot : {0}", rot);
             //Console.Error.WriteLine("Col : {0}", col);
             Console.WriteLine("{0} {1}", col, rot); // "x": the column in which to drop your blocks
@@ -128,66 +128,72 @@ class Player
         return 'e';
     }
 
-    static int GetHeightCol(char[][] map, Color c)
+    static int GetHeightCol(char[][] map, Color c, int rot)
     {
         int     col = 0;
-        //Console.Error.WriteLine("ColorA {0}, ColorB : {1}", c.ColorA, c.ColorB);
-        for (int j = 0; j < 6; j++)
+        int     max = 6;
+        int     min = 0;
+
+        if (rot == 0)
+            max = 5;
+        if (rot == 2)
+            min = 1;
+        for (int j = min; j < max; j++)
         {
             char  firstChar = GetFirstHeightPos(map, j);
-            //Console.Error.WriteLine("firstChar : {0}", firstChar);
-            //Console.Error.WriteLine("TEST {0} {1}", c.ColorA, map[i][j]);
             if (c.ColorA == firstChar)
             {
-                //Console.Error.WriteLine("TEST");
                 return j;
             }
-            //Console.Error.Write(map[i][j]);
         }
-        col = GetWidthCol(map, c);
-        return col;
+        return GetWidthCol(map, c, rot);
     }
 
-    static int GetWidthCol(char[][] map, Color c)
+    static int GetWidthCol(char[][] map, Color c, int rot)
     {
-        int     col = 0;
+        int     max = 6;
+        int     min = 0;
 
+        if (rot == 0)
+            max = 5;
+        if (rot == 2)
+            min = 1;
         for (int i = 0; i < 12; i++)
         {
-            for (int j = 0; j < 6; j++)
+            for (int j = min; j < max; j++)
             {
-                //Console.Error.WriteLine("TEST {0} {1}", c.ColorA, map[i][j]);
                 if (c.ColorA == map[i][j])
                 {
                     if (j - 1 > 0 && map[i][j - 1] == '.')
                         return j - 1;
-                    if (j + 1 < 6 && map[i][j + 1] == '.')
+                    if (j + 1 < max && map[i][j + 1] == '.')
                         return j + 1;
                 }
-                //Console.Error.Write(map[i][j]);
             }
-            //Console.Error.WriteLine();
         }
-        col = GetMinCol(map, c);
-        return col;
+        return GetMinCol(map, c, rot);
     }
 
-    static int GetMinCol(char[][] map, Color c)
+    static int GetMinCol(char[][] map, Color c, int rot)
     {
         int     minCol = 12;
-        int     col = 0;
+        int     max = 6;
+        int     min = 0;
 
+        if (rot == 0)
+            max = 5;
+        if (rot == 2)
+            min = 1;
         for (int i = 11; i >= 0; i--)
         {
-            for (int j = 0; j < 6; j++)
+            for (int j = min; j < max; j++)
             {
                 if (map[i][j] == '.')
                 {
-                    //Console.Error.WriteLine("TEST2 {0} {1}", i, j);
                     return j;
                 }
             }
         }
-        return col;
+        return 0;
     }
 }
