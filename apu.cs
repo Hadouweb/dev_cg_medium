@@ -14,58 +14,27 @@ class Player
     {
         int width = int.Parse(Console.ReadLine()); // the number of cells on the X axis
         int height = int.Parse(Console.ReadLine()); // the number of cells on the Y axis
-        int[,] tab = new int[height, width];
+
+        List<Tuple<int, int>> nodes = new List<Tuple<int, int>>();
         for (int i = 0; i < height; i++)
         {
             char[] characters = Console.ReadLine().ToCharArray(); // width characters, each either 0 or .
-            for (int j = 0; j < width; j++)
-            {
-                tab[i,j] = characters[j];
-            }
-        }
 
-        for (int i = 0; i < height; i++)
-        {
-            for (int j = 0; j < width; j++)
+            for (int j = 0; j < characters.Length; j++)
             {
-                Console.Error.WriteLine((char)tab[i,j]);
-                if (tab[i, j] == '0')
+                if (characters[j] == '0')
                 {
-                    Console.Write(j + " " + i + " ");
-                    PrintRight(i, j + 1, height, width, tab);
-                    PrintBot(i + 1, j, height, width, tab);
-                    Console.WriteLine();
+                    nodes.Add(Tuple.Create(j, i));
                 }
             }
         }
 
-        // Three coordinates: a node, its right neighbor, its bottom neighbor
-        //Console.WriteLine("0 0 1 0 0 1");
-    }
-
-    static void PrintRight(int _i, int _j, int height, int width, int[,] tab)
-    {
-        for (int j = _j; j < width; j++)
+        foreach (Tuple<int, int> node in nodes)
         {
-            if (tab[_i, j] == '0')
-            {
-                Console.Write(j + " " + _i + " ");
-                return;
-            }
+            var down = nodes.FirstOrDefault(t => t.Item1 == node.Item1 && t.Item2 > node.Item2) ?? Tuple.Create(-1, -1);
+            var right = nodes.FirstOrDefault(t => t.Item1 > node.Item1 && t.Item2 == node.Item2) ?? Tuple.Create(-1, -1);
+            Console.WriteLine(string.Format("{0} {1} {2} {3} {4} {5}",
+                node.Item1, node.Item2, right.Item1, right.Item2, down.Item1, down.Item2));
         }
-        Console.Write("-1 -1 ");
-    }
-
-    static void PrintBot(int _i, int _j, int height, int width, int[,] tab)
-    {
-        for (int i = _i; i < height; i++)
-        {
-            if (tab[i, _j] == '0')
-            {
-                Console.Write(_j + " " + i + " ");
-                return;
-            }
-        }
-        Console.Write("-1 -1 ");
     }
 }
