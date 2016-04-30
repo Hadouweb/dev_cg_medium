@@ -51,15 +51,71 @@ class Player
                 for (int j = 0; j < 6; j++)
                 {
                     //Console.Error.WriteLine("TEST {0} {1}", c.ColorA, map[i][j]);
-                    Console.Error.Write(map[i][j]);
+                    //Console.Error.Write(map[i][j]);
                 }
-                Console.Error.WriteLine();
+                //Console.Error.WriteLine();
             }
             int col = GetHeightCol(map, c);
-            Console.Error.WriteLine("Col resul : {0}", col);
-            Console.WriteLine(col); // "x": the column in which to drop your blocks
+            int rot = GetRot0(map, c);
+            Console.Error.WriteLine("Rot : {0}", rot);
+            //Console.Error.WriteLine("Col : {0}", col);
+            Console.WriteLine("{0} {1}", col, rot); // "x": the column in which to drop your blocks
             colors.RemoveAt(0);
         }
+    }
+
+    static int GetRot0(char[][] map, Color c)
+    {
+        for (int j = 0; j < 5; j++)
+        {
+            char  firstCharA = GetFirstHeightPos(map, j);
+            char  firstCharB = GetFirstHeightPos(map, j + 1);
+            //Console.Error.WriteLine("firstChar : {0}", firstChar);
+            //Console.Error.WriteLine("TEST {0} {1}", c.ColorA, map[i][j]);
+            if (c.ColorA == firstCharA && c.ColorB == firstCharB)
+            {
+                //Console.Error.WriteLine("TEST");
+                return 0;
+            }
+            //Console.Error.Write(map[i][j]);
+        }
+        return GetRot2(map, c);
+    }
+
+    static int GetRot2(char[][] map, Color c)
+    {
+        for (int j = 0; j < 5; j++)
+        {
+            char  firstCharA = GetFirstHeightPos(map, j);
+            char  firstCharB = GetFirstHeightPos(map, j + 1);
+            //Console.Error.WriteLine("firstChar : {0}", firstChar);
+            //Console.Error.WriteLine("TEST {0} {1}", c.ColorA, map[i][j]);
+            if (c.ColorB == firstCharA && c.ColorA == firstCharB)
+            {
+                //Console.Error.WriteLine("TEST");
+                return 2;
+            }
+            //Console.Error.Write(map[i][j]);
+        }
+        return 1;
+    }
+
+    static int GetRot1(char[][] map, Color c)
+    {
+        for (int i = 0; i < 12; i++)
+        {
+            for (int j = 0; j < 6; j++)
+            {
+                if (c.ColorA == map[i][j])
+                {
+                    if (j - 1 > 0 && map[i][j - 1] == '.')
+                        return 1;
+                    if (j + 1 < 6 && map[i][j + 1] == '.')
+                        return 1;
+                }
+            }
+        }
+        return -1;
     }
 
     static char GetFirstHeightPos(char[][] map, int j)
@@ -79,7 +135,7 @@ class Player
         for (int j = 0; j < 6; j++)
         {
             char  firstChar = GetFirstHeightPos(map, j);
-            Console.Error.WriteLine("firstChar : {0}", firstChar);
+            //Console.Error.WriteLine("firstChar : {0}", firstChar);
             //Console.Error.WriteLine("TEST {0} {1}", c.ColorA, map[i][j]);
             if (c.ColorA == firstChar)
             {
@@ -94,7 +150,6 @@ class Player
 
     static int GetWidthCol(char[][] map, Color c)
     {
-        int     minCol = 12;
         int     col = 0;
 
         for (int i = 0; i < 12; i++)
