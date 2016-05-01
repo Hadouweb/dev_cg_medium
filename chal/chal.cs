@@ -12,6 +12,9 @@ using System.Collections.Generic;
 
 class Player
 {
+
+    static bool Smash;
+
     public struct Color
     {
         public char ColorA { get; private set; }
@@ -31,7 +34,7 @@ class Player
             if (map[i][j] != '.')
                 return i - 1;
         }
-        return 0;
+        return 11;
     }
 
     static void Main(string[] args)
@@ -39,6 +42,7 @@ class Player
         char[][]    map = new char[12][];
         int[]       max = new int[6];
 
+        Smash = false;
         while (true)
         {
             var     colors = new List<Color>();
@@ -75,10 +79,9 @@ class Player
                 //Console.Error.WriteLine("Col : {0} Max : {1} Value : {2}", j, max[j], map[max[j]][j]);
             }
 
-
+            GoSmash(map, c, 0, max);
             int rot = GetRot0(map, c, max);
-            int col = GetMinCol(map, c, rot);
-            col = rot;
+            int col = rot;
             //Console.Error.WriteLine("Rot : {0}", rot);
             //Console.Error.WriteLine("Col : {0}", col);
             Console.WriteLine("{0} {1}", col, 0); // "x": the column in which to drop your blocks
@@ -93,26 +96,26 @@ class Player
         if (map[i][j] == c)
         {
             map[i][j] = '.';
-            return (2
-                    + CountSameColor(map, i - 1, j, c)
-                    + CountSameColor(map, i + 1, j, c)
-                    + CountSameColor(map, i, j - 1, c)
-                    + CountSameColor(map, i, j + 1, c));
+            return (1
+                    + Contaminate(map, i - 1, j, c)
+                    + Contaminate(map, i + 1, j, c)
+                    + Contaminate(map, i, j - 1, c)
+                    + Contaminate(map, i, j + 1, c));
         }
         return 0;
     }
-
+ 
     static int CountSameColor(char[][] map, int i, int j, char c)
     {
         int total = 0;
         if (i < 0 || i > 11 || j < 0 || j > 5)
             return 0;
-        //Console.Error.WriteLine("{0} {1} {2} {3}", i, j, map[i][j], c);
+        //Console.Error.WriteLine("i : {0} j : {1}", i, j);
         if (i - 1 > 0 && map[i - 1][j] == c) 
         {
             total += Contaminate(map, i - 1, j, c);
         }
-        if (i + 1 < 11 && map[i + 1][j] == c)
+        if (i + 1 < 12 && map[i + 1][j] == c)
         {
             total += Contaminate(map, i + 1, j, c);
         }
@@ -120,27 +123,12 @@ class Player
         {
             total += Contaminate(map, i, j - 1, c);
         }
-        if (j + 1 < 5 && map[i][j + 1] == c)
+        if (j + 1 < 6 && map[i][j + 1] == c)
         {
             total += Contaminate(map, i, j + 1, c);
         }
-
-        if (i - 1 > 0 && j - 1 > 0 && map[i - 1][j - 1] == c) 
-        {
-            total += Contaminate(map, i - 1, j - 1, c);
-        }
-        if (i - 1 > 0 && j + 1 < 5 && map[i - 1][j + 1] == c)
-        {
-            total += Contaminate(map, i - 1, j + 1, c);
-        }
-        if (i + 1 < 11 && j - 1 > 0 && map[i + 1][j - 1] == c) 
-        {
-            total += Contaminate(map, i = 1, j - 1, c);
-        }
-        if (i + 1 < 11 && j + 1 < 5 && map[i + 1][j + 1] == c) 
-        {
-            total += Contaminate(map, i + 1, j + 1, c);
-        }
+        if (total > 0)
+            total++;
         return total;
     }
 
@@ -153,24 +141,28 @@ class Player
         {
             if (max[j] != -1)
             {
-                char  posA = map[max[j]][j];
-                char  posB = map[max[j]][j + 1];
-
                 int nbColorA = CountSameColor(map, max[j], j, c.ColorA);
                 int nbColorB = CountSameColor(map, max[j + 1], j + 1, c.ColorB);
                 int total = nbColorA + nbColorB;
+                if (c.ColorA == c.ColorB)
+                {
+                    nbColorA++;
+                    nbColorB++;
+                }
+                if ((nbColorA > 3 || nbColorB > 3) && Smash == false)
+                    total = 0;
                 if (total > oldTotal)
                 {
                     oldTotal = total;
                     col = j;
                 }
-                Console.Error.WriteLine("TotalA : {0} ColorA : {1} | TotalB : {2} ColorB : {3} Col : {4}", 
-                    nbColorA, c.ColorA, nbColorB, c.ColorB, j);
+                if (total > 0)
+                    Console.Error.WriteLine("TotalA : {0} ColorA : {1} | TotalB : {2} ColorB : {3} Col : {4}", 
+                        nbColorA, c.ColorA, nbColorB, c.ColorB, j);
             }
-            //Console.Error.Write(map[i][j]);
         }
         if (oldTotal == 0)
-            return GetMinCol(map, c, 0);
+            return GetMinCol(map, c, 0, max);
         return col;
     }
 
@@ -247,44 +239,23 @@ class Player
         return false;
     }
 
-    static int GetHeightCol(char[][] map, Color c, int rot)
+    static bool GoSmash(char[][] map, Color c, int rot, int[] max)
     {
-        int     col = 0;
+        bool isTime = false;
 
-        //Console.Error.WriteLine("TEST1");
+        //Console.Error.WriteLine("TEST3");
         for (int j = 0; j < 6; j++)
         {
-            char    firstChar = GetFirstHeightPos(map, j, rot);
-            int     firstFree = GetFirstFreePos(map, j);
-
-            if (c.ColorA == firstChar && IsAuthorizePos(map, j, rot))
+            if (max[j] < 8)
             {
-                return j;
+                isTime = true;
             }
         }
-        return GetWidthCol(map, c, rot);
+        Smash = isTime;
+        return Smash;
     }
 
-    static int GetWidthCol(char[][] map, Color c, int rot)
-    {
-        //Console.Error.WriteLine("TEST2");
-        for (int i = 0; i < 12; i++)
-        {
-            for (int j = 0; j < 6; j++)
-            {
-                if (c.ColorA == map[i][j] && IsAuthorizePos(map, j, rot))
-                {
-                    if (j - 1 > 0 && map[i][j - 1] == '.')
-                        return j - 1;
-                    if (j + 1 < 6 && map[i][j + 1] == '.')
-                        return j + 1;
-                }
-            }
-        }
-        return GetMinCol(map, c, rot);
-    }
-
-    static int GetMinCol(char[][] map, Color c, int rot)
+    static int GetMinCol(char[][] map, Color c, int rot, int[] max)
     {
         int     maxFree = 0;
         int     col = 0;
@@ -292,12 +263,10 @@ class Player
         //Console.Error.WriteLine("TEST3");
         for (int j = 0; j < 6; j++)
         {
-            int     firstFree = GetFirstFreePos(map, j);
-
-            if (IsAuthorizePos(map, j, rot) && firstFree > maxFree)
+            if (IsAuthorizePos(map, j, rot) && max[j] > maxFree)
             {
                 //Console.Error.WriteLine("OK");
-                maxFree = firstFree;
+                maxFree = max[j];
                 col = j;
             }
         }
