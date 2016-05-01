@@ -19,11 +19,12 @@ class Color
 
 class Solution 
 {
-    public int[] max { get; private set; }
-    public int col { get; private set; }
-    public int rot { get; private set; }
-    public char[][] map { get; private set; }
-    public List<Color> colors { get; private set; }
+    public int[] max { get; protected set; }
+    public int col { get; protected set; }
+    public int rot { get; protected set; }
+    public char[][] map { get; protected set; }
+    public List<Color> colors { get; protected set; }
+    public Color c { get; protected set; }
 
     public Solution(char[][] _map, List<Color> _colors)
     {
@@ -32,6 +33,7 @@ class Solution
         rot = 0;
         map = _map;
         colors = _colors;
+        c = colors.First();
         for (int j = 0; j < 6; j++)
         {
             max[j] = GetFirstFreePos(map, j);
@@ -136,40 +138,21 @@ class Solution
     }
 }
 
-class PrepareSmash
+class PrepareSmash : Solution
 {
-    public int col { get; private set; }
-    public int rot { get; private set; }
-    public Solution s { get; private set; }
-    public Color c { get; private set; }
-    public Smash sm { get; private set; }
-
     public PrepareSmash(char[][] _map, List<Color> _colors)
+        : base(_map, _colors)
     {
-        s = new Solution(_map, _colors);
-        sm = new Smash();
-        c = s.colors.First();
 
-        col = s.GetMinCol();
-        rot = 1;
     }
 
-    public void TryRot0()
+    public int TryRot0()
     {
-        if (sm.ItsTimeToSmash())
-        {
-            int r = sm.GoSmashRot0();
-            if (r != -1)
-            {
-                col = r;
-                return;
-            }
-        }
-        int oldTotal = 0;
+        int oldTotal = -1;
         for (int j = 0; j < 5; j++)
         {
-            int nbColorA = s.CountSameColor(0, j, c.ColorA);
-            int nbColorB = s.CountSameColor(0, j + 1, c.ColorB);
+            int nbColorA = CountSameColor(0, j, c.ColorA);
+            int nbColorB = CountSameColor(0, j + 1, c.ColorB);
             int total = nbColorA + nbColorB;
             if (c.ColorA == c.ColorB)
             {
@@ -184,18 +167,17 @@ class PrepareSmash
                 col = j;
                 rot = 0;
             }
-            //if (total > 0)
-            //    Console.Error.WriteLine("TotalA : {0} ColorA : {1} | TotalB : {2} ColorB : {3} Col : {4}", 
-            //        nbColorA, c.ColorA, nbColorB, c.ColorB, j);
         }
+        return oldTotal;
     }
 }
 
-class Smash : PrepareSmash
+class Smash : Solution
 {
     public bool itsTime { get; private set; }
 
-    public Smash()
+    public Smash(char[][] _map, List<Color> _colors)
+        : base(_map, _colors)
     {
         itsTime = false;
     }
@@ -204,7 +186,7 @@ class Smash : PrepareSmash
     {
         for (int j = 0; j < 6; j++)
         {
-            if (s.max[j] < 6)
+            if (max[j] < 6)
             {
                 itsTime = true;
             }
@@ -217,21 +199,21 @@ class Smash : PrepareSmash
         Console.Error.WriteLine("Smash");
         int oldTotal = 0;
         int oldCol = 0;
-        int result = 0;
+        int result = -1;
         for (int j = 0; j < 5; j++)
         {
-            int nbColorA = s.CountSameColor(0, j, c.ColorA);
-            int nbColorB = s.CountSameColor(0, j + 1, c.ColorB);
+            int nbColorA = CountSameColor(0, j, c.ColorA);
+            int nbColorB = CountSameColor(0, j + 1, c.ColorB);
             int total = nbColorA + nbColorB;
             if (c.ColorA == c.ColorB)
             {
                 nbColorA++;
                 nbColorB++;
             }
-            if (total > oldTotal && (nbColorA > 3 || nbColorB > 3) && s.max[j] > oldCol)
+            if (total > oldTotal && (nbColorA > 3 || nbColorB > 3) && max[j] > oldCol)
             {
                 oldTotal = total;
-                oldCol = s.max[j];
+                oldCol = max[j];
                 result = j;
             }
         }
@@ -263,13 +245,41 @@ class Player
             }
             //colors.ForEach(color => Console.Error.WriteLine("ColorA {0}, ColorB : {1}", color.ColorA, color.ColorB));
 
+            int col = 0;
+            int rot = 0;
+            int r = -1;
+            Smash sm = new Smash(map, colors);
             PrepareSmash p = new PrepareSmash(map, colors);
-            p.TryRot0();
+            if (sm.ItsTimeToSmash())
+            {
+                r = sm.GoSmashRot0();
+                if (r != -1)
+                {
+                    col = sm.col;
+                    rot = 0;
+                }
+            }
+            if (sm.ItsTimeToSmash() == false || r == -1)
+            {
+                r = p.TryRot0();
+                if (r != -1)
+                {
+                    col = p.col;
+                    rot = p.rot;
+                }
+            }
+            if (r == -1)
+            {
+                p.GetMinCol();
+                col = p.col;
+                rot = p.rot;
+            }
+            
             //GoSmash(map, c, max);
             //GetRot0(map, c, max);
             //Console.Error.WriteLine("Rot : {0}", rot);
             //Console.Error.WriteLine("Col : {0}", col);
-            Console.WriteLine("{0} {1}", p.col, p.rot); // "x": the column in which to drop your blocks
+            Console.WriteLine("{0} {1}", col, rot); // "x": the column in which to drop your blocks
         }
     }
 }
