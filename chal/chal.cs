@@ -215,7 +215,7 @@ class Simulation
     {
         max = new int[6];
         map = _map;
-        tryMap = map;
+        tryMap = map.Select(a => a.ToArray()).ToArray();
         colors = _colors;
         c = colors.First();
         for (int j = 0; j < 6; j++)
@@ -236,30 +236,6 @@ class Simulation
         return 11;
     }
 
-    public bool IsAuthorizePos(int j, int rot)
-    {
-        int     i = max[j];
-
-        if (i < 0)
-            return false;
-        if (rot == 0 && j + 1 < 6 && map[i][j] == '.' && map[i][j + 1] == '.')
-        {
-            return true;
-        }
-        if (rot == 1 && i - 1 > 0 && map[i][j] == '.' && map[i - 1][j] == '.')
-        {
-            return true;
-        }
-        if (rot == 2 && j - 1 >= 0 && map[i][j] == '.' && map[i][j - 1] == '.')
-        {
-            return true;
-        }
-        if (rot == 3 && i > 0 && map[i][j] == '.' && map[i - 1][j] == '.')
-        {
-            return true;
-        }
-        return false;
-    }
 
     private int Contaminate(char[][] _map, int i, int j, char c)
     {
@@ -277,37 +253,6 @@ class Simulation
                     + Contaminate(_map, i, j + 1, c));
         }
         return 0;
-    }
-
-    /*public int CountSameColor(char[][] _map, int i, int j, char c)
-    {
-        int         total = 0;
-        char[][]    saveMap = _map.Select(a => a.ToArray()).ToArray();
-
-        if (i < 0 || i > 11 || j < 0 || j > 5)
-            return -1;
-        total += Contaminate(saveMap, i + 1, j, c);
-        saveMap = _map.Select(a => a.ToArray()).ToArray();
-        total += Contaminate(saveMap, i, j - 1, c);
-        saveMap = _map.Select(a => a.ToArray()).ToArray();
-        total += Contaminate(saveMap, i, j + 1, c);
-        saveMap = _map.Select(a => a.ToArray()).ToArray();
-        if (total > 0)
-            total++;
-        return total;
-    }*/
-
-    public void PrintMap(char[][] map)
-    {
-        for (int i = 0; i < 12; i++)
-        {
-            for (int j = 0; j < 6; j++)
-            {
-                Console.Error.Write(" {0}", map[i][j]);
-            }
-            Console.Error.WriteLine();
-        }
-        Console.Error.WriteLine("____________");
     }
 
     public Tuple<int, int, int> TryRot0()
@@ -329,7 +274,9 @@ class Simulation
                 tryMap[max[j + 1]][j + 1] = c.ColorB;
                 //PrintMap(tryMap);
                 int totalB = Contaminate(tryMap, max[j + 1], j + 1, c.ColorB);
-
+                tryMap = map.Select(a => a.ToArray()).ToArray();
+                tryMap[max[j]][j] = c.ColorA;
+                tryMap[max[j + 1]][j + 1] = c.ColorB;
                 //Console.Error.WriteLine("totalA : {0} totalB : {1}", totalA, totalB);
                 //PrintMap(map);
                 s = new Score(map, c, max);
@@ -345,7 +292,7 @@ class Simulation
         return Tuple.Create(oldScore, col, 0);
     }
 
-    public Tuple<int, int, int> TryRot1()
+    /*public Tuple<int, int, int> TryRot1()
     {
         int oldScore = 0;
         int col = -1;
@@ -448,98 +395,242 @@ class Simulation
             }
         }
         return Tuple.Create(oldScore, col, 3);
+    }*/
+}
+
+class BestScore
+{
+    public int GB { get; private set; }
+    public int B { get; private set; }
+    public int step { get; private set; }
+    public char[][] tryMap { get; private set; }
+    public char[][] saveMap { get; private set; }
+    public int[] max { get; private set; }
+    public int score { get; private set; }
+
+    public BestScore(char[][] _map, int[] _max)
+    {
+        tryMap = _map.Select(a => a.ToArray()).ToArray();
+        max = _max;
+        B = 0;
+        score = 0;
     }
 
-    /*public Tuple<int, int, int> TryRot2()
+    public void PrintMap(char[][] map)
     {
-        int oldTotal = 0;
-        int total = 0;
-        int col = -1;
-        for (int j = 1; j < 6; j++)
+        for (int i = 0; i < 12; i++)
         {
-            if (max[j] > 0 && max[j - 1] > 0)
+            for (int j = 0; j < 6; j++)
             {
-                tryMap = map.Select(a => a.ToArray()).ToArray();
-                tryMap[max[j]][j] = c.ColorA;
-                tryMap[max[j - 1]][j - 1] = c.ColorB;
-                //PrintMap(tryMap);
-                //tryMap = map.Select(a => a.ToArray()).ToArray();
-                int totalA = CountSameColor(tryMap, max[j], j, c.ColorA);
-                int totalB = -1;
-                if (totalA != -1)
-                {
-                    tryMap = map.Select(a => a.ToArray()).ToArray();
-                    tryMap[max[j]][j] = c.ColorA;
-                    tryMap[max[j - 1]][j - 1] = c.ColorB;
-                    //PrintMap(tryMap);   
-                    totalB = CountSameColor(map, max[j - 1], j - 1, c.ColorB);
-                    if (totalB != -1)
-                    {
-                        total = totalA + totalB;
-                        if (c.ColorA == c.ColorB)
-                            total /= 2;
-                        if (totalA > 3)
-                            total *= 2;
-                        if (totalB > 3)
-                            total *= 2;
-                        if (total >= oldTotal)
-                        {
-                            oldTotal = total;
-                            col = j;
-                        }
-                        //Console.Error.WriteLine("Total : {0} Col : {1} totalA : {2} totalB {3} colA : {4} colB: {5}", 
-                        //    total, col, totalA, totalB, j, j + 1);
-                    }
-                }
+                Console.Error.Write(" {0}", map[i][j]);
             }
+            Console.Error.WriteLine();
         }
-        return Tuple.Create(oldTotal, col, 2);
+        Console.Error.WriteLine("____________");
     }
-    public Tuple<int, int, int> TryRot3()
+
+    private int Contaminate(char[][] _map, int i, int j, char c)
     {
-        int oldTotal = 0;
-        int total = 0;
-        int col = -1;
+        if (i < 0 || i > 11 || j < 0 || j > 5)
+            return 0;
+        if (_map[i][j] == c)
+        {
+            _map[i][j] = '.';
+            return (1
+                    + Contaminate(_map, i - 1, j, c)
+                    + Contaminate(_map, i + 1, j, c)
+                    + Contaminate(_map, i, j - 1, c)
+                    + Contaminate(_map, i, j + 1, c));
+        }
+        return 0;
+    }
+
+    public char[][] PushColorInMap(char[][] _map)
+    {
+        char[][] mapClean = Enumerable.Range(0, 12)
+            .Select(x => Enumerable.Repeat('.', 6).ToArray()).ToArray();
+        int[] m = Enumerable.Repeat(11, 6).ToArray();
         for (int j = 0; j < 6; j++)
         {
-            if (max[j] + 1 < 11 && max[j] > 0)
+            for (int i = 11; i >= 0; i--)
             {
-                tryMap = map.Select(a => a.ToArray()).ToArray();
-                tryMap[max[j]][j] = c.ColorA;
-                tryMap[max[j] + 1][j] = c.ColorB;
-                //PrintMap(tryMap);
-                //tryMap = map.Select(a => a.ToArray()).ToArray();
-                int totalA = CountSameColor(tryMap, max[j], j, c.ColorA);
-                int totalB = -1;
-                if (totalA != -1)
+                if (_map[i][j] != '.')
                 {
-                    tryMap = map.Select(a => a.ToArray()).ToArray();
-                    tryMap[max[j]][j] = c.ColorA;
-                    tryMap[max[j] + 1][j] = c.ColorB;
-                    //PrintMap(tryMap);   
-                    totalB = CountSameColor(map, max[j] + 1, j, c.ColorB);
-                    if (totalB != -1)
-                    {
-                        total = totalA + totalB;
-                        if (c.ColorA == c.ColorB)
-                            total /= 2;
-                        if (totalA > 3)
-                            total *= 2;
-                        if (totalB > 3)
-                            total *= 2;
-                        if (total >= oldTotal)
-                        {
-                            oldTotal = total;
-                            col = j;
-                        }
-                        //Console.Error.WriteLine("Total : {0} Col : {1} totalA : {2} totalB {3}", 
-                        //    total, col, totalA, totalB);
+                    mapClean[m[j]][j] = _map[i][j];
+                    m[j]--;
+                }
+            }
+        }
+        return (mapClean);
+    }
+
+    public int CalculCP()
+    {
+        int     cp = 0;
+
+        if (step > 1)
+            cp = 8;
+        for (int i = 2; i < step; i++)
+            cp *= 2;
+        return cp;
+    }
+
+    public void CalculStep(int i, int j)
+    {
+        int nb_block = Contaminate2(tryMap, i, j, tryMap[i][j]);
+
+        if (nb_block - 4 > 0)
+            GB += nb_block;
+        tryMap = PushColorInMap(tryMap);
+        saveMap = tryMap.Select(a => a.ToArray()).ToArray();
+
+        if (B > 3)
+        {
+            int _B = B;
+            int _CP = CalculCP();
+            int _CB = 0;
+            int _GB = GB;
+            int C = _CP + _CB + _GB; 
+            if (C <= 0)
+                C = 1;
+            else if (C > 999)
+                C = 999;
+            score += (10 * _B) * C;
+            if (score > 0)
+            {
+                //Console.Error.WriteLine("B {0} CP {1} CB {2} GB {3}", _B, _CP, _CB, _GB);
+                //Console.Error.WriteLine("Score {0}", score);
+            }
+        }
+    }
+
+    public void CalculScore()
+    {
+        saveMap = tryMap.Select(a => a.ToArray()).ToArray();
+        GB = 0;
+        for (int i = 0; i < 12; i++)
+        {
+            for (int j = 0; j < 6; j++)
+            {
+                if (saveMap[i][j] != '.' && saveMap[i][j] != '0')
+                {
+                    B = Contaminate(saveMap, i, j, saveMap[i][j]);
+                    saveMap = tryMap.Select(a => a.ToArray()).ToArray();
+                    //Console.Error.WriteLine("B {0}", B);
+                    if (B > 3)
+                    {   
+                        step++;
+                        CalculStep(i, j);
                     }
                 }
             }
         }
-        return Tuple.Create(oldTotal, col, 3);
-    }*/
+    }
+
+    private int Contaminate2(char[][] _map, int i, int j, char c)
+    {
+        //Console.Error.WriteLine("i {0} j {1}", i, j);
+        if (i < 0 || i > 11 || j < 0 || j > 5)
+            return 0;
+        if (_map[i][j] == '0')
+        {
+            _map[i][j] = '.';
+            return 0;
+        }
+        if (_map[i][j] == c)
+        {
+            _map[i][j] = '.';
+            return (Contaminate2(_map, i - 1, j, c)
+                    + Contaminate2(_map, i + 1, j, c)
+                    + Contaminate2(_map, i, j - 1, c)
+                    + Contaminate2(_map, i, j + 1, c));
+        }
+        return 0;
+    }
+}
+
+class SimulationMap
+{
+    public List<Color> colors { get; private set; }
+    public char[][] simMap { get; private set; }
+    public int[] max { get; private set; }
+    public int bestCol { get; private set; }
+    public int finalScore { get; private set; }
+
+    public SimulationMap(List<Color> _colors, int[] _max)
+    {
+        colors = _colors;
+        max = (int[])_max.Clone();
+        bestCol = 0;
+        finalScore = 0;
+        RunSimulation();
+    }
+
+    public void RunSimulation()
+    {
+        int  i;
+        for (i = 0; i < 2000; i++) 
+        {
+            int currentCol = -1;
+            max = Enumerable.Repeat(11, 6).ToArray();
+            simMap = Enumerable.Range(0, 12).Select(x => Enumerable.Repeat('.', 6).ToArray()).ToArray();
+            int seed = i;
+            foreach (Color c in colors)
+            {
+                Random rnd = new Random(seed++);
+                int col = rnd.Next(0,5);
+                PushPiece(c, col);
+                if (currentCol == -1)
+                    currentCol = col;
+            }
+            BestScore bs = new BestScore(simMap, max);
+            bs.CalculScore();
+            int score = bs.score;
+            if (score > finalScore)
+            {
+                bestCol = currentCol;
+                finalScore = score;
+            }
+            //PrintMap(simMap);
+        }
+        if (finalScore > 0)
+            Console.Error.WriteLine("bestScore {0}", finalScore);
+        //PrintMap(simMap);
+        //Console.Error.WriteLine(i + 1);
+    }
+
+    public void setPieceInMap(char[][] map, int j, int j2, Color c)
+    {
+        simMap[max[j]][j] = c.ColorA;
+        simMap[max[j2]][j2] = c.ColorB;
+        max[j]--;
+        max[j + 1]--;
+    }
+
+    public void PushPiece(Color c, int start)
+    {
+        for (int j = start; j < 5; j++)
+        {
+            if (max[j] >= 0 && max[j + 1] >= 0)
+            {
+                setPieceInMap(simMap, j, j + 1, c);
+                return;
+            }
+        }
+    }
+
+    public void PrintMap(char[][] map)
+    {
+        for (int i = 0; i < 12; i++)
+        {
+            for (int j = 0; j < 6; j++)
+            {
+                Console.Error.Write(" {0}", map[i][j]);
+            }
+            Console.Error.WriteLine();
+        }
+        Console.Error.WriteLine("____________");
+    }
 }
 
 class BestSimulation : Simulation
@@ -550,15 +641,23 @@ class BestSimulation : Simulation
     public BestSimulation(char[][] _map, List<Color> _colors)
         :base(_map, _colors)
     {
+        SimulationMap sm = new SimulationMap(colors, max);
+        //if (sm.bestCol > 0)
+            Console.WriteLine("{0} {1}", sm.bestCol,  0);
+        /*else
+        {
+            TryRot();
+            Console.WriteLine("{0} {1}", bestCol,  bestRot);
+        }*/
     }
 
     public void TryRot()
     {
-        Tuple<int, int, int>[] rot = new Tuple<int, int, int>[4];
+        Tuple<int, int, int>[] rot = new Tuple<int, int, int>[1];
         rot[0] = TryRot0();
-        rot[1] = TryRot1();
-        rot[2] = TryRot2();
-        rot[3] = TryRot3();
+        //rot[1] = TryRot1();
+        //rot[2] = TryRot2();
+        //rot[3] = TryRot3();
 
         int bestScore = 0;
         foreach (var r1 in rot)
@@ -658,7 +757,6 @@ class Player
             //colors.ForEach(color => Console.Error.WriteLine("ColorA {0}, ColorB : {1}", color.ColorA, color.ColorB));
 
             BestSimulation s = new BestSimulation(map, colors);
-            s.TryRot();
 
             Console.WriteLine("{0} {1}", s.bestCol, s.bestRot); // "x": the column in which to drop your blocks
         }
