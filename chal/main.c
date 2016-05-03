@@ -16,6 +16,8 @@ typedef struct      s_app
     char            **sim_map;
     int             *max;
     int             *sim_max;
+    int             col;
+    int             rot;
 }                   t_app;
 
 double ft_timer(clock_t begin)
@@ -72,8 +74,8 @@ void    ft_set_piece_on_map(t_app *app, int y1, int x1, int y2, int x2, t_color 
     app->sim_map[y1][x1] = c.cA;
     app->sim_map[y2][x2] = c.cB;
 
-    app->sim_max[x1]--;
-    app->sim_max[x2]--;
+    //app->sim_max[x1]--;
+    //app->sim_max[x2]--;
 }
 
 int     ft_is_authorize(t_app *app, int rot, int x)
@@ -83,14 +85,14 @@ int     ft_is_authorize(t_app *app, int rot, int x)
         return (0);
     else if (rot == 1 && m[x] - 1 >= 0)
         return (1);
-    else if (rot == 2 && (x - 1 >= 0) && m[x] >= 0 && m[x - 1] >= 0)
+    else if (rot == 2 && (x - 1 > 0) && m[x] >= 0 && m[x - 1] >= 0)
         return (2);
     else if (rot == 3 && m[x] - 1 >= 0 && m[x] >= 0)
         return (3);
     return (-1);
 }
 
-void    ft_push_on_map(t_app *app, t_color c, char start, int rot)
+int    ft_push_on_map(t_app *app, t_color c, char start, int rot)
 {
     int *m = app->sim_max;
     for (int x = start; x < 6; x++)
@@ -100,30 +102,30 @@ void    ft_push_on_map(t_app *app, t_color c, char start, int rot)
         {
             //fprintf(stderr, "Authorize 0\n");
             ft_set_piece_on_map(app, m[x], x, m[x + 1], x + 1, c);
-            return;
+            return (x);
         }
         else if (authorize == 1)
         {
             //fprintf(stderr, "Authorize 1\n");
             ft_set_piece_on_map(app, m[x], x, m[x] - 1, x, c);
-            return;
+            return (x);
         }
         else if (authorize == 2)
         {
-            //fprintf(stderr, "Authorize 2\n");
             ft_set_piece_on_map(app, m[x], x, m[x - 1], x - 1, c);
-            return;
+            return (x);
         }
         else if (authorize == 3)
         {
             //fprintf(stderr, "Authorize 3\n");
             ft_set_piece_on_map(app, m[x] - 1, x, m[x], x, c);
-            return;
+            return (x);
         }
     }
+    return (-1);
 }
 
-void    ft_simulation_pos(t_app *app)
+void    ft_simulation(t_app *app)
 {
     int count = 0;
     for (int x1 = 0; x1 < 6; x1++)
@@ -155,40 +157,130 @@ void    ft_simulation_pos(t_app *app)
     fprintf(stderr, "Count : %d\n", count);
 }
 
-
-/*void    ft_simulation(t_app *app)
+int     ft_contaminate(char **m, int y, int x, char c)
 {
-    int count = 0;
-    for (int x1 = 0; x1 < 5; x1++)
+    if (y < 0 || y > 11 || x < 0 || x > 5)
+        return 0;
+    //fprintf(stderr, "y %d x %d c %c mc %c\n", y, x, c, m[y][x]);
+    if (m[y][x] == c)
     {
-        for (int x2 = 0; x2 < 5; x2++)
+        m[y][x] = '.';
+        return (1
+                + ft_contaminate(m, y - 1, x, c)
+                + ft_contaminate(m, y + 1, x, c)
+                + ft_contaminate(m, y, x - 1, c)
+                + ft_contaminate(m, y, x + 1, c));
+    }
+    return 0;
+}
+
+int     ft_calcul_score(t_app *app)
+{
+    int     old_total = 0;
+
+    for (int y = 0; y < 12; y++) 
+    {
+        for (int x = 0; x < 6; x++)
         {
-            for (int x3 = 0; x3 < 5; x3++)
+            if (app->sim_map[y][x] != '.' && app->sim_map[y][x] != '0')
             {
-                for (int x4 = 0; x4 < 5; x4++)
-                {
-                    for (int x5 = 0; x5 < 5; x5++)
-                    {
-                        for (int x6 = 0; x6 < 5; x6++)
-                        {
-                            app->sim_map = ft_copy_map(app->map);
-                            app->sim_max = strdup(app->max);
-                            ft_push_on_map(app, app->colors[0], x1);
-                            ft_push_on_map(app, app->colors[1], x2);
-                            ft_push_on_map(app, app->colors[3], x3);
-                            ft_push_on_map(app, app->colors[4], x4);
-                            ft_push_on_map(app, app->colors[5], x5);
-                            ft_push_on_map(app, app->colors[6], x6);
-                            count++;
-                        }
-                    }
-                }
-                //ft_print_map(app->sim_map);
+                int total = ft_contaminate(app->sim_map, y, x, app->sim_map[y][x]);
+                if (total > old_total)
+                    old_total = total;
             }
         }
     }
+    return old_total;
+}
+
+int     ft_calcul_score2(t_app *app, int x, int r, t_color c)
+{
+    int     old_total = 0;
+    int     total = 0;
+    int     ta = 0;
+    int     tb = 0;
+    char    **map = app->sim_map;
+    char    **max = app->sim_max;
+
+    int authorize = ft_is_authorize(app, r, x);
+    if (authorize == 0)
+    {
+        ft_print_map(map);
+        ta = ft_contaminate(map, max[x], x, c.cA);
+        ft_print_map(map);
+        tb = ft_contaminate(map, max[x + 1], x + 1, c.cB);
+        fprintf(stderr, "r0 ta : %d tb : %d y1 : %d x1 %d y2 : %d x2 : %d cA : %c cB : %c\n", ta, tb, max[x], x, max[x+1], x+1, c.cA, c.cB);
+        total = (ta > tb) ? ta : tb;
+        if (total > old_total)
+            old_total = total;
+    }
+    else if (authorize == 1)
+    {
+        ft_print_map(map);  
+        ta = ft_contaminate(map, max[x], x, c.cA);
+        ft_print_map(map);
+        tb = ft_contaminate(map, max[x] - 1, x, c.cB);      
+        fprintf(stderr, "r1 ta : %d tb : %d x1 : %d x2 : %d cA : %c cB : %c\n", ta, tb, x, x, c.cA, c.cB);
+        total = (ta > tb) ? ta : tb;
+        if (total > old_total)
+            old_total = total;
+    }
+    else if (authorize == 2)
+    {
+        ft_print_map(map);  
+        ta = ft_contaminate(map, max[x], x, c.cA);
+        ft_print_map(map);
+        tb = ft_contaminate(map, max[x - 1], x - 1, c.cB);    
+        fprintf(stderr, "r2 ta : %d tb : %d x1 : %d x2 : %d cA : %c cB : %c\n", ta, tb, x, x-1, c.cA, c.cB);
+        total = (ta > tb) ? ta : tb;
+        if (total > old_total)
+        {
+            old_total = total;
+        }
+    }
+    else if (authorize == 3)
+    {
+        ft_print_map(map);  
+        ta = ft_contaminate(map, max[x] - 1, x, c.cA);
+        ft_print_map(map);
+        tb = ft_contaminate(map, max[x], x, c.cB);      
+        fprintf(stderr, "r3 ta : %d tb : %d x1 : %d x2 : %d cA : %c cB : %c\n", ta, tb, x, x, c.cA, c.cB);
+        total = (ta > tb) ? ta : tb;
+        if (total > old_total)
+            old_total = total;
+    }
+    return old_total;
+}
+
+void    ft_simulation_test(t_app *app)
+{
+    int old_score = 0;
+    int count = 0;
+    for (int x1 = 0; x1 < 6; x1++)
+    {
+        for (int r1 = 0; r1 < 4; r1++)
+        {
+            ft_cpy_map(app->sim_map, app->map);  
+            ft_copy_max(app->sim_max, app->max);
+            int current_x1 = ft_push_on_map(app, app->colors[0], x1, r1);
+            //ft_print_map(app->sim_map);
+            int score = ft_calcul_score2(app, current_x1, r1, app->colors[0]);
+            fprintf(stderr, "Score : %d Col : %d Rot : %d\n", score , current_x1, r1);
+            if (score > old_score)
+            {
+                old_score = score;
+                app->rot = r1;
+                app->col = current_x1;
+            }
+            //fprintf(stderr, "score : %d\n", score);
+            //ft_print_max(app->sim_max);
+            count++;
+        }
+    }
     fprintf(stderr, "Count : %d\n", count);
-}*/
+    fprintf(stderr, "Score : %d Col : %d Rot : %d\n", old_score , app->col, app->rot);
+}
+
 
 void    ft_copy_max(int *dst, int *src)
 {
@@ -208,6 +300,8 @@ void    ft_cpy_map(char **dst, char **src)
 
 void    ft_init(t_app *app)
 {
+    app->col = -1;
+    app->rot = -1;
     app->sim_map = (char**)malloc(12 * sizeof(char*));
     for (int i = 0; i < 12; i++)
     {
@@ -226,7 +320,7 @@ void    ft_init(t_app *app)
     ft_print_map(app->map);
     ft_print_map(app->sim_map);*/
     ft_set_max(app);
-    ft_simulation_pos(app);
+    ft_simulation_test(app);
 }
 
 int     main()
@@ -279,7 +373,7 @@ int     main()
         }*/
 
         fprintf(stderr, "\n%f %d\n", ft_timer(begin), i);
-        printf("0 0\n");
+        printf("%d %d\n", app.col, app.rot);
     }
 
     return 0;
