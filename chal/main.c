@@ -57,16 +57,6 @@ void    ft_set_max(t_app *app)
     //ft_print_max(app->max);
 }
 
-char    **ft_copy_map(char **src)
-{
-    char **dst = (char**)malloc(12 * sizeof(char*));
-    for (int y = 0; y < 12; y++)
-    {
-        dst[y] = strdup(src[y]);
-    }
-    return (dst);
-}
-
 void    ft_print_max(int *max)
 {
     for (int x = 0; x < 6; x++)
@@ -76,15 +66,6 @@ void    ft_print_max(int *max)
     fprintf(stderr, "\n");
 }
 
-char    **ft_copy_max(int *src)
-{
-    int *dst = (int*)malloc(6 * sizeof(int));
-    for (int x = 0; x < 6; x++)
-    {
-        dst[x] = src[x];
-    }
-    return (dst);
-}
 
 void    ft_set_piece_on_map(t_app *app, int y1, int x1, int y2, int x2, t_color c)
 {
@@ -104,7 +85,7 @@ int     ft_is_authorize(t_app *app, int rot, int x)
         return (1);
     else if (rot == 2 && (x - 1 >= 0) && m[x] >= 0 && m[x - 1] >= 0)
         return (2);
-    else if (rot == 3 && m[x] >= 1)
+    else if (rot == 3 && m[x] - 1 >= 0 && m[x] >= 0)
         return (3);
     return (-1);
 }
@@ -114,27 +95,28 @@ void    ft_push_on_map(t_app *app, t_color c, char start, int rot)
     int *m = app->sim_max;
     for (int x = start; x < 6; x++)
     {
-        if (ft_is_authorize(app, rot, x) == 0)
+        int authorize = ft_is_authorize(app, rot, x);
+        if (authorize == 0)
         {
-            fprintf(stderr, "Authorize 0\n");
+            //fprintf(stderr, "Authorize 0\n");
             ft_set_piece_on_map(app, m[x], x, m[x + 1], x + 1, c);
             return;
         }
-        else if (ft_is_authorize(app, rot, x) == 1)
+        else if (authorize == 1)
         {
-            fprintf(stderr, "Authorize 1\n");
+            //fprintf(stderr, "Authorize 1\n");
             ft_set_piece_on_map(app, m[x], x, m[x] - 1, x, c);
             return;
         }
-        else if (ft_is_authorize(app, rot, x) == 2)
+        else if (authorize == 2)
         {
-            fprintf(stderr, "Authorize 2\n");
+            //fprintf(stderr, "Authorize 2\n");
             ft_set_piece_on_map(app, m[x], x, m[x - 1], x - 1, c);
             return;
         }
-        else if (ft_is_authorize(app, rot, x) == 3)
+        else if (authorize == 3)
         {
-            fprintf(stderr, "Authorize 3\n");
+            //fprintf(stderr, "Authorize 3\n");
             ft_set_piece_on_map(app, m[x] - 1, x, m[x], x, c);
             return;
         }
@@ -146,14 +128,31 @@ void    ft_simulation_pos(t_app *app)
     int count = 0;
     for (int x1 = 0; x1 < 6; x1++)
     {
-        app->sim_map = ft_copy_map(app->map);
-        app->sim_max = ft_copy_max(app->max);
-        ft_push_on_map(app, app->colors[0], x1, 3);
-        count++;
-        ft_print_map(app->sim_map);
-        ft_print_max(app->sim_max);
+        for (int r1 = 0; r1 < 4; r1++)
+        {
+            for (int x2 = 0; x2 < 6; x2++)
+            {
+                for (int r2 = 0; r2 < 4; r2++)
+                {
+                    for (int x3 = 0; x3 < 6; x3++)
+                    {
+                        for (int r3 = 0; r3 < 4; r3++)
+                        {
+                            ft_cpy_map(app->sim_map, app->map); 
+                            ft_copy_max(app->sim_max, app->max);
+                            ft_push_on_map(app, app->colors[0], x1, r1);
+                            ft_push_on_map(app, app->colors[1], x2, r2);
+                            ft_push_on_map(app, app->colors[2], x3, r3);
+                            count++;
+                            //ft_print_map(app->sim_map);
+                            //ft_print_max(app->sim_max);
+                        }
+                    }
+                }
+            }
+        }
     }
-    //fprintf(stderr, "Count : %d\n", count);
+    fprintf(stderr, "Count : %d\n", count);
 }
 
 
@@ -191,9 +190,41 @@ void    ft_simulation_pos(t_app *app)
     fprintf(stderr, "Count : %d\n", count);
 }*/
 
+void    ft_copy_max(int *dst, int *src)
+{
+    for (int x = 0; x < 6; x++)
+    {
+        dst[x] = src[x];
+    }
+}
+
+void    ft_cpy_map(char **dst, char **src)
+{
+    for (int y = 0; y < 12; y++) 
+    {
+        memcpy(dst[y], src[y], 6);
+    }
+}
+
 void    ft_init(t_app *app)
 {
-    //ft_print_map(app);
+    app->sim_map = (char**)malloc(12 * sizeof(char*));
+    for (int i = 0; i < 12; i++)
+    {
+        app->sim_map[i] = (char*)malloc(6);
+    }
+    app->sim_max = (int*)malloc(6 * sizeof(int));
+    //fprintf(stderr, "%s\n", app->sim_map[0]);
+    //fprintf(stderr, "%d\n", sizeof(app->map));
+    /*for (int i = 0; i < 1000000; i++)
+    {
+        ft_cpy_map(app->sim_map, app->map);
+    }
+    app->sim_map[11][0] = '@';
+    app->map[11][1] = '?';
+    //ft_cpy_map(app->sim_map, app->map);
+    ft_print_map(app->map);
+    ft_print_map(app->sim_map);*/
     ft_set_max(app);
     ft_simulation_pos(app);
 }
