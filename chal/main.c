@@ -14,8 +14,8 @@ typedef struct      s_app
     t_color         *colors;
     char            **map;
     char            **sim_map;
-    char            *max;
-    char            *sim_max;
+    int             *max;
+    int             *sim_max;
 }                   t_app;
 
 double ft_timer(clock_t begin)
@@ -36,25 +36,25 @@ void    ft_print_map(char **map)
     fprintf(stderr, "____________\n");
 }
 
+int     ft_get_first_free_pos(char **map, int x)
+{
+    for (int y = 0; y < 12; y++)
+    {
+        if (map[y][x] != '.')
+            return (y - 1);
+    }
+    return (11);
+}
+
 void    ft_set_max(t_app *app)
 {
-    app->max = malloc(6);
-    memset(app->max, 11, 6);
-    char    **map = app->map;
+    app->max = (int*)malloc(6 * sizeof(int));
+    
     for (int x = 0; x < 6; x++)
     {
-        for (int y = 11; y >= 0; y--) 
-        {
-            if (map[y][x] != '.')
-            {
-                app->max[x] = y - 1;
-            }
-        }
+        app->max[x] = ft_get_first_free_pos(app->map, x);
     }
-    for (int x = 0; x < 6; x++)
-    {
-        //fprintf(stderr, "%d ", app->max[x]);
-    }
+    //ft_print_max(app->max);
 }
 
 char    **ft_copy_map(char **src)
@@ -67,23 +67,97 @@ char    **ft_copy_map(char **src)
     return (dst);
 }
 
-void    ft_push_on_map(t_app *app, t_color c, char start)
+void    ft_print_max(int *max)
 {
-    char *m = app->sim_max;
-    for (int x = start; x < 5; x++)
+    for (int x = 0; x < 6; x++)
     {
-        if (m[x] > 0 && m[x + 1] > 0)
+        fprintf(stderr, "%d ", max[x]);
+    }
+    fprintf(stderr, "\n");
+}
+
+char    **ft_copy_max(int *src)
+{
+    int *dst = (int*)malloc(6 * sizeof(int));
+    for (int x = 0; x < 6; x++)
+    {
+        dst[x] = src[x];
+    }
+    return (dst);
+}
+
+void    ft_set_piece_on_map(t_app *app, int y1, int x1, int y2, int x2, t_color c)
+{
+    app->sim_map[y1][x1] = c.cA;
+    app->sim_map[y2][x2] = c.cB;
+
+    app->sim_max[x1]--;
+    app->sim_max[x2]--;
+}
+
+int     ft_is_authorize(t_app *app, int rot, int x)
+{
+    int *m = app->sim_max;
+    if (rot == 0 && (x + 1 < 6) && m[x] >= 0 && m[x + 1] >= 0)
+        return (0);
+    else if (rot == 1 && m[x] - 1 >= 0)
+        return (1);
+    else if (rot == 2 && (x - 1 >= 0) && m[x] >= 0 && m[x - 1] >= 0)
+        return (2);
+    else if (rot == 3 && m[x] >= 1)
+        return (3);
+    return (-1);
+}
+
+void    ft_push_on_map(t_app *app, t_color c, char start, int rot)
+{
+    int *m = app->sim_max;
+    for (int x = start; x < 6; x++)
+    {
+        if (ft_is_authorize(app, rot, x) == 0)
         {
-            app->sim_map[m[x]][x] = c.cA;
-            app->sim_map[m[x + 1]][x + 1] = c.cB;
-            m[x]--;
-            m[x + 1]--;
+            fprintf(stderr, "Authorize 0\n");
+            ft_set_piece_on_map(app, m[x], x, m[x + 1], x + 1, c);
+            return;
+        }
+        else if (ft_is_authorize(app, rot, x) == 1)
+        {
+            fprintf(stderr, "Authorize 1\n");
+            ft_set_piece_on_map(app, m[x], x, m[x] - 1, x, c);
+            return;
+        }
+        else if (ft_is_authorize(app, rot, x) == 2)
+        {
+            fprintf(stderr, "Authorize 2\n");
+            ft_set_piece_on_map(app, m[x], x, m[x - 1], x - 1, c);
+            return;
+        }
+        else if (ft_is_authorize(app, rot, x) == 3)
+        {
+            fprintf(stderr, "Authorize 3\n");
+            ft_set_piece_on_map(app, m[x] - 1, x, m[x], x, c);
             return;
         }
     }
 }
 
-void    ft_simulation(t_app *app)
+void    ft_simulation_pos(t_app *app)
+{
+    int count = 0;
+    for (int x1 = 0; x1 < 6; x1++)
+    {
+        app->sim_map = ft_copy_map(app->map);
+        app->sim_max = ft_copy_max(app->max);
+        ft_push_on_map(app, app->colors[0], x1, 3);
+        count++;
+        ft_print_map(app->sim_map);
+        ft_print_max(app->sim_max);
+    }
+    //fprintf(stderr, "Count : %d\n", count);
+}
+
+
+/*void    ft_simulation(t_app *app)
 {
     int count = 0;
     for (int x1 = 0; x1 < 5; x1++)
@@ -115,13 +189,13 @@ void    ft_simulation(t_app *app)
         }
     }
     fprintf(stderr, "Count : %d\n", count);
-}
+}*/
 
 void    ft_init(t_app *app)
 {
     //ft_print_map(app);
     ft_set_max(app);
-    ft_simulation(app);
+    ft_simulation_pos(app);
 }
 
 int     main()
