@@ -40,6 +40,21 @@ typedef struct      s_score
     char            nb_color[5];
 }                   t_score;
 
+typedef struct      s_list
+{
+    void            *content;
+    size_t          content_size;
+    struct s_list   *next;
+}                   t_list;
+
+typedef struct      s_node
+{
+    int             col;
+    int             rot;
+    int             deep;
+    int             score;
+}                   t_node;
+
 typedef struct      s_app
 {
     t_color         *colors;
@@ -53,6 +68,7 @@ typedef struct      s_app
     t_score         sc;
     t_fs            calcul_score;
     int             final_score;
+    t_list          *lst;
 }                   t_app;
 
 double ft_timer(clock_t begin)
@@ -137,67 +153,6 @@ int     ft_is_authorize(t_app *app, int rot, int x)
     else if (rot == 3 && m[x] - 1 >= 0 && m[x] >= 0)
         return (3);
     return (-1);
-}
-
-void    ft_set_piece_on_map(t_app *app, int y1, int x1, int y2, int x2, t_color c)
-{
-    app->sim_map[y1][x1] = c.cA;
-    app->sim_map[y2][x2] = c.cB;
-
-    //app->sim_max[x1]--;
-    //app->sim_max[x2]--;
-}
-
-void    ft_push_on_map(t_app *app, t_color c, char start, int rot, t_sim *s)
-{
-    int *m = app->sim_max;
-    for (int x = start; x < 6; x++)
-    {
-        int authorize = ft_is_authorize(app, rot, x);
-        if (authorize == 0)
-        {
-            //fprintf(stderr, "Authorize 0\n");
-            ft_set_piece_on_map(app, m[x], x, m[x + 1], x + 1, c);
-            s->y1 = m[x];
-            s->x1 = x;
-            s->y2 = m[x + 1];
-            s->x2 = x + 1;
-            s->rot = 0;
-            return;
-        }
-        else if (authorize == 1)
-        {
-            //fprintf(stderr, "Authorize 1\n");
-            ft_set_piece_on_map(app, m[x], x, m[x] - 1, x, c);
-            s->y1 = m[x];
-            s->x1 = x;
-            s->y2 = m[x] - 1;
-            s->x2 = x;
-            s->rot = 1;
-            return;
-        }
-        else if (authorize == 2)
-        {
-            ft_set_piece_on_map(app, m[x], x, m[x - 1], x - 1, c);
-            s->y1 = m[x];
-            s->x1 = x;
-            s->y2 = m[x - 1];
-            s->x2 = x - 1;
-            s->rot = 2;
-            return;
-        }
-        else if (authorize == 3)
-        {
-            //fprintf(stderr, "Authorize 3\n");
-            ft_set_piece_on_map(app, m[x] - 1, x, m[x], x, c);
-            s->y1 = m[x] - 1;
-            s->x1 = x;
-            s->y2 = m[x];
-            s->x2 = x;
-            s->rot = 3;
-            return;
-        }
-    }
 }
 
 int     ft_contaminate(char **m, int y, int x, char c)
@@ -319,6 +274,163 @@ void    ft_run_calcul(t_app *app)
     //ft_print_map(app->sc.score_map);
 }
 
+void    ft_set_piece_on_map(t_app *app, int y1, int x1, int y2, int x2, t_color c)
+{
+    app->sim_map[y1][x1] = c.cA;
+    app->sim_map[y2][x2] = c.cB;
+}
+
+void    ft_push_on_map(t_app *app, t_color c, char start, int rot, t_sim *s)
+{
+    int *m = app->sim_max;
+    for (int x = start; x < 6; x++)
+    {
+        int authorize = ft_is_authorize(app, rot, x);
+        if (authorize == 0)
+        {
+            //fprintf(stderr, "Authorize 0\n");
+            ft_set_piece_on_map(app, m[x], x, m[x + 1], x + 1, c);
+            s->y1 = m[x];
+            s->x1 = x;
+            s->y2 = m[x + 1];
+            s->x2 = x + 1;
+            s->rot = 0;
+            return;
+        }
+        else if (authorize == 1)
+        {
+            //fprintf(stderr, "Authorize 1\n");
+            ft_set_piece_on_map(app, m[x], x, m[x] - 1, x, c);
+            s->y1 = m[x];
+            s->x1 = x;
+            s->y2 = m[x] - 1;
+            s->x2 = x;
+            s->rot = 1;
+            return;
+        }
+        else if (authorize == 2)
+        {
+            ft_set_piece_on_map(app, m[x], x, m[x - 1], x - 1, c);
+            s->y1 = m[x];
+            s->x1 = x;
+            s->y2 = m[x - 1];
+            s->x2 = x - 1;
+            s->rot = 2;
+            return;
+        }
+        else if (authorize == 3)
+        {
+            //fprintf(stderr, "Authorize 3\n");
+            ft_set_piece_on_map(app, m[x] - 1, x, m[x], x, c);
+            s->y1 = m[x] - 1;
+            s->x1 = x;
+            s->y2 = m[x];
+            s->x2 = x;
+            s->rot = 3;
+            return;
+        }
+    }
+}
+
+t_list  *ft_lstnew(void const *content, size_t content_size)
+{
+    t_list  *list;
+
+    if ((list = (t_list*)malloc(sizeof(t_list))) == NULL)
+        return (NULL);
+    if (!content)
+    {
+        list->content = NULL;
+        list->content_size = 0;
+    }
+    else
+    {
+        if ((list->content = malloc(content_size)) == NULL)
+        {
+            free(list);
+            return (NULL);
+        }
+        memcpy(list->content, content, content_size);
+        list->content_size = content_size;
+    }
+    list->next = NULL;
+    return (list);
+}
+
+void    ft_lstpush_back(t_list **l, void const *c, size_t s)
+{
+    t_list  *list;
+
+    list = *l;
+    if (list)
+    {
+        while (list->next)
+            list = list->next;
+        list->next = ft_lstnew(c, s);
+    }
+    else
+        *l = ft_lstnew(c, s);
+}
+
+void    ft_lstprint(t_list *lst, void (*print)(void *))
+{
+    while (lst)
+    {
+        fprintf(stderr, "%s", "content : [");
+        if (print)
+            (*print)(lst->content);
+        else
+            fprintf(stderr, "%s", lst->content);
+        fprintf(stderr, "%s", "]\tsize : ");
+        fprintf(stderr, "%d", lst->content_size);
+        fprintf(stderr, "%s", "]\n");
+        lst = lst->next;
+    }
+}
+
+void    ft_print_node(void *content)
+{
+    t_node  *n;
+
+    n = (t_node*)content;
+    fprintf(stderr, "Col : %d | ", n->col);
+    fprintf(stderr, "Rot : %d | ", n->rot);
+    fprintf(stderr, "Deep : %d | ", n->deep);
+    fprintf(stderr, "Score : %d", n->score);
+}
+
+int     ft_simulation_score(t_app *app, int x, int r, int deep)
+{
+    //if (score_a1 > 3 || score_b1 > 3 || score_a2 > 3 || score_b2 > 3 || score_a2 > 3 || score_b2 > 3)
+    //{
+        bzero(&app->calcul_score, sizeof(t_fs));
+        ft_run_calcul(app);
+        if (app->calcul_score.current_score > app->final_score)
+        {
+            app->final_score = app->calcul_score.current_score;
+            fprintf(stderr, "Score : %d\n", app->final_score);
+            //fprintf(stderr, "y1 : %d x1 : %d y2 : %d x2 : %d rot : %d\n", s.y1, s.x1, s.y2, s.x2, r1);
+            app->lst = NULL;
+            return (app->calcul_score.current_score);
+        }
+    //}
+    return (-1);
+}
+
+void    ft_set_node(t_app *app, int col, int rot, int deep, int score)
+{
+    t_node  *n;
+
+    n = NULL;
+
+    n = (t_node*)malloc(sizeof(t_node));
+    n->col = col;
+    n->rot = rot;
+    n->deep = deep;
+    n->score = score;
+    ft_lstpush_back(&app->lst, (void*)n, sizeof(t_node));
+}
+
 void    ft_calcul_score(t_app *app)
 {
     ft_cpy_map(app->sim_map, app->map);  
@@ -330,6 +442,7 @@ void    ft_calcul_score(t_app *app)
     t_sim s;
     t_sim s1;
     t_sim s2;
+    int node_score;
 
     for (int x1 = 0; x1 < 6; x1++)
     {
@@ -351,37 +464,56 @@ void    ft_calcul_score(t_app *app)
                             ft_copy_max(app->sim_max, app->max);
 
                             ft_push_on_map(app, app->colors[0], x1, r1, &s);
-                            ft_push_on_map(app, app->colors[1], x2, r2, &s1);
-                            ft_push_on_map(app, app->colors[2], x3, r3, &s2);
+                            app->sim_max[s.x1]--;
+                            app->sim_max[s.x2]--;
+
+                            //ft_print_map(app->sim_map);
 
                             ft_cpy_map(app->sc.score_map, app->sim_map);
                             int score_a1 = ft_contaminate(app->sc.score_map, s.y1, s.x1, app->colors[0].cA);
                             ft_cpy_map(app->sc.score_map, app->sim_map);
                             int score_b1 = ft_contaminate(app->sc.score_map, s.y2, s.x2, app->colors[0].cB);
 
-                            ft_cpy_map(app->sc.score_map, app->sim_map);
-                            int score_a2 = ft_contaminate(app->sc.score_map, s1.y1, s1.x1, app->colors[1].cA);
-                            ft_cpy_map(app->sc.score_map, app->sim_map);
-                            int score_b2 = ft_contaminate(app->sc.score_map, s1.y2, s1.x2, app->colors[1].cB);
+                            if ((node_score = ft_simulation_score(app, s.x1, s.rot, 1)) != -1)
+                            {
+                                ft_set_node(app, s.x1, s.rot, 1, node_score);
+                            }
 
-                            ft_cpy_map(app->sc.score_map, app->sim_map);
-                            int score_a3 = ft_contaminate(app->sc.score_map, s2.y1, s2.x1, app->colors[2].cA);
-                            ft_cpy_map(app->sc.score_map, app->sim_map);
-                            int score_b3 = ft_contaminate(app->sc.score_map, s2.y2, s2.x2, app->colors[2].cB);
+                            if (score_a1 < 4 && score_b1 < 4)
+                            {
+                                ft_push_on_map(app, app->colors[1], x2, r2, &s1);
+                                app->sim_max[s1.x1]--;
+                                app->sim_max[s1.x2]--;
+                                ft_cpy_map(app->sc.score_map, app->sim_map);
+                                int score_a2 = ft_contaminate(app->sc.score_map, s1.y1, s1.x1, app->colors[1].cA);
+                                ft_cpy_map(app->sc.score_map, app->sim_map);
+                                int score_b2 = ft_contaminate(app->sc.score_map, s1.y2, s1.x2, app->colors[1].cB);
 
-                            //if (score_a1 > 3 || score_b1 > 3 || score_a2 > 3 || score_b2 > 3 || score_a2 > 3 || score_b2 > 3)
-                            //{
-                                bzero(&app->calcul_score, sizeof(t_fs));
-                                ft_run_calcul(app);
-                                if (app->calcul_score.current_score > app->final_score)
+                                
+                                if ((node_score = ft_simulation_score(app, s.x1, s.rot, 1)) != -1)
                                 {
-                                    app->final_score = app->calcul_score.current_score;
-                                    fprintf(stderr, "Score : %d\n", app->final_score);
-                                    fprintf(stderr, "y1 : %d x1 : %d y2 : %d x2 : %d rot : %d\n", s.y1, s.x1, s.y2, s.x2, r1);
-                                    app->col = s.x1;
-                                    app->rot = r1;
+                                    ft_set_node(app, s.x1, s.rot, 2, node_score);
+                                    ft_set_node(app, s1.x1, s1.rot, 2, node_score);
                                 }
-                            //}
+
+                                if (score_a2 < 4 && score_b2 < 4)
+                                {
+                                    ft_push_on_map(app, app->colors[2], x3, r3, &s2);
+                                    app->sim_max[s2.x1]--;
+                                    app->sim_max[s2.x2]--;
+                                    ft_cpy_map(app->sc.score_map, app->sim_map);
+                                    int score_a3 = ft_contaminate(app->sc.score_map, s2.y1, s2.x1, app->colors[2].cA);
+                                    ft_cpy_map(app->sc.score_map, app->sim_map);
+                                    int score_b3 = ft_contaminate(app->sc.score_map, s2.y2, s2.x2, app->colors[2].cB);
+
+                                    if ((node_score = ft_simulation_score(app, s.x1, s.rot, 1)) != -1)
+                                    {
+                                        ft_set_node(app, s.x1, s.rot, 3, node_score);
+                                        ft_set_node(app, s1.x1, s1.rot, 3, node_score);
+                                        ft_set_node(app, s2.x1, s2.rot, 3, node_score);
+                                    }
+                                }
+                            }
 
                             //ft_print_map(app->sim_map);
                             //fprintf(stderr, "score_a : %d score_b : %d\n", score_a, score_b);
@@ -424,12 +556,12 @@ void    ft_simulation_test(t_app *app)
             //fprintf(stderr, "s.y1 : %d s.x1 : %d s.y2 : %d s.x2 : %d\n", s.y1, s.x1, s.y2, s.x2);
             int score = (score_a > score_b) ? score_a : score_b;
             //ft_print_max(app->sim_max);
-            //fprintf(stderr, "s.y1 : %d s.x1 : %d s.y2 : %d s.x2 : %d s.rot : %d\n", s.y1, s.x1, s.y2, s.x2, s.rot);
+            //fprintf(stderr, "s.y1 : %d s.x1 : %d s.y2 : %d s.x2 : %d s.rot : %d score : %d\n", s.y1, s.x1, s.y2, s.x2, s.rot, score);
             if (score > old_score && app->map[s.y1][s.x1] == '.' && app->map[s.y2][s.x2] == '.')
             {
                 if (score < 4)
                 {
-                    //fprintf(stderr, "s.y1 : %d s.x1 : %d s.y2 : %d s.x2 : %d s.rot : \n", s.y1, s.x1, s.y2, s.x2, s.rot);
+                    fprintf(stderr, "s.y1 : %d s.x1 : %d s.y2 : %d s.x2 : %d s.rot : %d score : %d\n", s.y1, s.x1, s.y2, s.x2, s.rot, score);
                     old_score = score;
                     app->rot = r1;
                     app->col = s.x1;
@@ -483,11 +615,31 @@ void    ft_init(t_app *app)
     ft_print_map(app->sim_map);*/
     ft_set_max(app);
     ft_calcul_score(app);
-    if (app->final_score < 100)
+
+    if (app->final_score == 0)
     {
+        //fprintf(stderr, "HERE\n");
         ft_cpy_map(app->sim_map, app->map); 
         ft_copy_max(app->sim_max, app->max);
+        //ft_print_map(app->sim_map);
         ft_simulation_test(app);
+    }
+    else
+    {
+        t_list *l;
+
+        l = app->lst;
+        t_node  *n;
+
+        n = (t_node*)l->content;
+
+        while (l)
+        {
+            ft_lstprint(l, ft_print_node);
+            l = l->next;
+        }
+
+        printf("%d %d\n", n->col, n->rot);
     }
 }
 
@@ -498,8 +650,9 @@ int     main()
 
     while (1) 
     {
+        //app.lst = NULL;
         clock_t begin = clock();
-        app.final_score = 0;
+        //app.final_score = 0;
         app.colors = malloc(8 * sizeof(t_color));
         for (int i = 0; i < 8; i++) 
         {
