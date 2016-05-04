@@ -266,12 +266,34 @@ void    ft_set_node(t_app *app, int col, int rot, int deep, int score)
     app->n.score = score;
 }
 
+int     ft_contaminate2(char **m, int y, int x, char c)
+{
+    if (y < 0 || y > 11 || x < 0 || x > 5)
+        return 0;
+    //fprintf(stderr, "y %d x %d c %c mc %c\n", y, x, c, m[y][x]);
+    if (m[y][x] == '0')
+    {
+        m[y][x] = '.';
+    }
+    if (m[y][x] == c)
+    {
+        m[y][x] = '.';
+        return (1
+                + ft_contaminate2(m, y - 1, x, c)
+                + ft_contaminate2(m, y + 1, x, c)
+                + ft_contaminate2(m, y, x - 1, c)
+                + ft_contaminate2(m, y, x + 1, c));
+    }
+    return 0;
+}
+
 void    ft_run_calcul(t_app *app)
 {
     ft_cpy_map(app->sc.score_map, app->sim_map);
     bzero(app->sc.nb_color, sizeof(app->sc.nb_color));
 
     int total_block = 0;
+    int gb = 0;
     for (int y = 0; y < 12; y++) 
     { 
         for (int x = 0; x < 6; x++)
@@ -283,8 +305,18 @@ void    ft_run_calcul(t_app *app)
                 {
                     //app->sc.nb_color[app->sim_map[y][x] - '0' - 1] = 1;
                     ft_cpy_map(app->sc.score_map, app->sim_map);
-                    ft_contaminate(app->sc.score_map, y, x, app->sc.score_map[y][x]);
+    
+                        
+                    
+                    ft_contaminate2(app->sc.score_map, y, x, app->sc.score_map[y][x]);
+
+                    ft_cpy_map(app->sim_map, app->sc.score_map);
+                    ft_print_map(app->sim_map);
                     total_block += size_block;
+                    if (size_block < 5)
+                        gb += 0;
+                    else
+                        gb += (size_block - 4);
                     //ft_count_cp(app, size_block);
                     //fprintf(stderr, "size_block : %d\n", size_block);
                     //return;
@@ -292,8 +324,14 @@ void    ft_run_calcul(t_app *app)
             }
         }
     }
+
     if (total_block > 3)
-        ft_count_cp(app, total_block);
+    {
+        ft_count_cp(app, total_block, gb);
+        //fprintf(stderr, "Total block : %d\n", total_block);
+        //ft_print_map(app->map);
+        //ft_print_map(app->sc.score_map);
+    }
     //ft_print_map(app->sc.score_map);
 }
 
@@ -312,22 +350,31 @@ void    ft_final_calcul(t_app *app)
     else if (app->calcul_score.c > 999)
         app->calcul_score.c = 999;
     app->calcul_score.current_score += (10 * app->calcul_score.b) * app->calcul_score.c;
-    if (app->calcul_score.current_score > 40)
-        fprintf(stderr, "Current Score : %d\n", app->calcul_score.current_score);
+    if (app->calcul_score.current_score >= 900)
+    {
+        fprintf(stderr, "B : %d | CP : %d | CB : %d | GB : %d | C : %d\n",
+                app->calcul_score.b, app->calcul_score.cp, app->calcul_score.cb,
+                app->calcul_score.gb, app->calcul_score.c);
+        fprintf(stderr, "________Current Score : %d\n", app->calcul_score.current_score);
+        //ft_print_map(app->sim_map);
+    }
 }
 
-void    ft_count_cp(t_app *app, int size_block)
+void    ft_count_cp(t_app *app, int size_block, int gb)
 {
     app->calcul_score.tmp_cp++;
     app->calcul_score.b = size_block;
-    app->calcul_score.gb = size_block;
-    if (app->calcul_score.gb < 5)
-        app->calcul_score.gb = 0;
-    else
-        app->calcul_score.gb -= 4;
+    app->calcul_score.gb = gb;
+
     ft_final_calcul(app);
 
+    //if (size_block > 8)
+    //    ft_print_map(app->sc.score_map);
+    //if (app->calcul_score.current_score >= 900)
+    //    ft_print_map(app->sc.score_map);
     ft_clean_map(app);
+    //if (app->calcul_score.current_score >= 900)
+    //    ft_print_map(app->sc.clean_map);
     ft_cpy_map(app->sim_map, app->sc.clean_map);
     //ft_print_map(app->sc.score_map);
     //ft_print_map(app->sc.clean_map);
@@ -343,7 +390,7 @@ void    ft_calcul_cp(t_app *app)
         app->calcul_score.cp = 8;
     else
         app->calcul_score.cp = 0;
-    for (int i = 2; i < max; i++)
+    for (int i = 1; i < max; i++)
         app->calcul_score.cp *= 2;
 }
 
@@ -356,24 +403,28 @@ int     ft_simulation_score(t_app *app, int deep, t_sim *s)
         if (app->calcul_score.current_score > app->final_score && app->calcul_score.current_score < 3000)
         {
             app->final_score = app->calcul_score.current_score;
-            /*fprintf(stderr, "B : %d | CP : %d | CB : %d | GB : %d | C : %d\n",
+            fprintf(stderr, "B : %d | CP : %d | CB : %d | GB : %d | C : %d\n",
                 app->calcul_score.b, app->calcul_score.cp, app->calcul_score.cb,
                 app->calcul_score.gb, app->calcul_score.c);
             fprintf(stderr, "Current Score : %d\n", app->calcul_score.current_score);
             fprintf(stderr, "1Score : %d Deep : %d\n", app->final_score, deep);
-            fprintf(stderr, "y1 : %d x1 : %d y2 : %d x2 : %d rot : %d\n\n", s->y1, s->x1, s->y2, s->x2, s->rot);*/
+            fprintf(stderr, "y1 : %d x1 : %d y2 : %d x2 : %d rot : %d\n\n", s->y1, s->x1, s->y2, s->x2, s->rot);
+            //if (app->calcul_score.current_score > 1500)
+            //    ft_print_map(app->sc.score_map);
             app->old_deep == 10;
             return (app->calcul_score.current_score);
         }
         else if (app->calcul_score.current_score == app->final_score && deep < app->old_deep)
         {
             app->final_score = app->calcul_score.current_score;
-            /*fprintf(stderr, "B : %d | CP : %d | CB : %d | GB : %d | C : %d\n",
+            fprintf(stderr, "B : %d | CP : %d | CB : %d | GB : %d | C : %d\n",
                 app->calcul_score.b, app->calcul_score.cp, app->calcul_score.cb,
                 app->calcul_score.gb, app->calcul_score.c);
             fprintf(stderr, "Current Score : %d\n", app->calcul_score.current_score);
             fprintf(stderr, "2Score : %d Deep : %d\n", app->final_score, deep);
-            fprintf(stderr, "y1 : %d x1 : %d y2 : %d x2 : %d rot : %d\n\n", s->y1, s->x1, s->y2, s->x2, s->rot);*/
+            fprintf(stderr, "y1 : %d x1 : %d y2 : %d x2 : %d rot : %d\n\n", s->y1, s->x1, s->y2, s->x2, s->rot);
+            //if (app->calcul_score.current_score > 1500)
+             //   ft_print_map(app->sc.score_map);
             app->old_deep = deep;
             return (app->calcul_score.current_score);
         }
