@@ -328,6 +328,8 @@ void    ft_calcul_score(t_app *app)
     int old_score = 0;
     int count = 0;
     t_sim s;
+    t_sim s1;
+    t_sim s2;
 
     for (int x1 = 0; x1 < 6; x1++)
     {
@@ -342,30 +344,33 @@ void    ft_calcul_score(t_app *app)
                         for (int r3 = 0; r3 < 4; r3++)
                         {
                             bzero(&s, sizeof(t_sim));
+                            bzero(&s1, sizeof(t_sim));
+                            bzero(&s2, sizeof(t_sim));
 
                             ft_cpy_map(app->sim_map, app->map);  
                             ft_copy_max(app->sim_max, app->max);
 
-                            ft_push_on_map(app, app->colors[2], x3, r3, &s);
-                            ft_cpy_map(app->sc.score_map, app->sim_map);
-                            int score_a3 = ft_contaminate(app->sc.score_map, s.y1, s.x1, app->colors[2].cA);
-                            ft_cpy_map(app->sc.score_map, app->sim_map);
-                            int score_b3 = ft_contaminate(app->sc.score_map, s.y2, s.x2, app->colors[2].cB);
-
-                            ft_push_on_map(app, app->colors[1], x2, r2, &s);
-                            ft_cpy_map(app->sc.score_map, app->sim_map);
-                            int score_a2 = ft_contaminate(app->sc.score_map, s.y1, s.x1, app->colors[1].cA);
-                            ft_cpy_map(app->sc.score_map, app->sim_map);
-                            int score_b2 = ft_contaminate(app->sc.score_map, s.y2, s.x2, app->colors[1].cB);
-
                             ft_push_on_map(app, app->colors[0], x1, r1, &s);
+                            ft_push_on_map(app, app->colors[1], x2, r2, &s1);
+                            ft_push_on_map(app, app->colors[2], x3, r3, &s2);
+
                             ft_cpy_map(app->sc.score_map, app->sim_map);
                             int score_a1 = ft_contaminate(app->sc.score_map, s.y1, s.x1, app->colors[0].cA);
                             ft_cpy_map(app->sc.score_map, app->sim_map);
                             int score_b1 = ft_contaminate(app->sc.score_map, s.y2, s.x2, app->colors[0].cB);
 
-                            if (score_a1 > 3 || score_b1 > 3 || score_a2 > 3 || score_b2 > 3 || score_a2 > 3 || score_b2 > 3)
-                            {
+                            ft_cpy_map(app->sc.score_map, app->sim_map);
+                            int score_a2 = ft_contaminate(app->sc.score_map, s1.y1, s1.x1, app->colors[1].cA);
+                            ft_cpy_map(app->sc.score_map, app->sim_map);
+                            int score_b2 = ft_contaminate(app->sc.score_map, s1.y2, s1.x2, app->colors[1].cB);
+
+                            ft_cpy_map(app->sc.score_map, app->sim_map);
+                            int score_a3 = ft_contaminate(app->sc.score_map, s2.y1, s2.x1, app->colors[2].cA);
+                            ft_cpy_map(app->sc.score_map, app->sim_map);
+                            int score_b3 = ft_contaminate(app->sc.score_map, s2.y2, s2.x2, app->colors[2].cB);
+
+                            //if (score_a1 > 3 || score_b1 > 3 || score_a2 > 3 || score_b2 > 3 || score_a2 > 3 || score_b2 > 3)
+                            //{
                                 bzero(&app->calcul_score, sizeof(t_fs));
                                 ft_run_calcul(app);
                                 if (app->calcul_score.current_score > app->final_score)
@@ -376,7 +381,7 @@ void    ft_calcul_score(t_app *app)
                                     app->col = s.x1;
                                     app->rot = r1;
                                 }
-                            }
+                            //}
 
                             //ft_print_map(app->sim_map);
                             //fprintf(stderr, "score_a : %d score_b : %d\n", score_a, score_b);
@@ -478,7 +483,7 @@ void    ft_init(t_app *app)
     ft_print_map(app->sim_map);*/
     ft_set_max(app);
     ft_calcul_score(app);
-    if (app->final_score < 300)
+    if (app->final_score < 100)
     {
         ft_cpy_map(app->sim_map, app->map); 
         ft_copy_max(app->sim_max, app->max);
