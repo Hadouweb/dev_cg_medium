@@ -64,6 +64,7 @@ typedef struct      s_app
     int             limit;
     int             old_deep;
     clock_t         time_begin;
+    int             step;
 }                   t_app;
 
 double ft_timer(clock_t begin)
@@ -406,7 +407,7 @@ int     ft_simulation_score(t_app *app, int deep, t_sim *s)
     return (-1);
 }
 
-void    ft_simulation_test(t_app *app)
+void    ft_simulation_last(t_app *app)
 {
     double old_score = 0;
     t_sim s;
@@ -416,32 +417,107 @@ void    ft_simulation_test(t_app *app)
     {
         for (int r1 = 0; r1 < 4; r1++)
         {
-                bzero(&s, sizeof(t_sim));
+            bzero(&s, sizeof(t_sim));
 
-                ft_cpy_map(app->sim_map, app->map);  
-                ft_copy_max(app->sim_max, app->max);
+            ft_cpy_map(app->sim_map, app->map);  
+            ft_copy_max(app->sim_max, app->max);
 
-                ft_push_on_map(app, app->colors[0], x1, r1, &s);
+            ft_push_on_map(app, app->colors[0], x1, r1, &s);
 
-                int score_a = ft_contaminate(app->sim_map, s.y1, s.x1, app->colors[0].cA);
-                int score_b = ft_contaminate(app->sim_map, s.y2, s.x2, app->colors[0].cB);
+            int score_a = ft_contaminate(app->sim_map, s.y1, s.x1, app->colors[0].cA);
+            int score_b = ft_contaminate(app->sim_map, s.y2, s.x2, app->colors[0].cB);
 
-                double score = score_a + score_b;
-                int min = (s.y1 < s.y2) ? s.y1 : s.y2;
+            double score = score_a + score_b;
+            int min = (s.y1 < s.y2) ? s.y1 : s.y2;
 
-                if (score > old_score && app->map[s.y1][s.x1] == '.' && app->map[s.y2][s.x2] == '.')
+            if (score > old_score && app->map[s.y1][s.x1] == '.' && app->map[s.y2][s.x2] == '.')
+            {
+                if (score_a < 4 && score_b < 4)
                 {
-                    if (score_a < 4 && score_b < 4 && min > old_min)
-                    {
-                        old_min = min;
-                        old_score = score;
-                        app->rot = r1;
-                        app->col = s.x1;
-                    }
+                    old_min = min;
+                    old_score = score;
+                    app->rot = r1;
+                    app->col = s.x1;
                 }
+            }
         }
     }
 }
+
+void    ft_simulation_test1(t_app *app)
+{
+    double old_score = 0;
+    t_sim s;
+    int old_min = 0;
+
+    for (int x1 = 2; x1 < 6; x1++)
+    {
+        for (int r1 = 3; r1 >= 0; r1--)
+        {
+            bzero(&s, sizeof(t_sim));
+
+            ft_cpy_map(app->sim_map, app->map);  
+            ft_copy_max(app->sim_max, app->max);
+
+            ft_push_on_map(app, app->colors[0], x1, r1, &s);
+
+            int score_a = ft_contaminate(app->sim_map, s.y1, s.x1, app->colors[0].cA);
+            int score_b = ft_contaminate(app->sim_map, s.y2, s.x2, app->colors[0].cB);
+
+            double score = score_a + score_b;
+            int min = (s.y1 < s.y2) ? s.y1 : s.y2;
+
+            if (score > old_score && app->map[s.y1][s.x1] == '.' && app->map[s.y2][s.x2] == '.')
+            {
+                if (score_a < 4 && score_b < 4)
+                {
+                    old_min = min;
+                    old_score = score;
+                    app->rot = r1;
+                    app->col = s.x1;
+                }
+            }
+        }
+    }
+}
+
+void    ft_simulation_test2(t_app *app)
+{
+    double old_score = 0;
+    t_sim s;
+    int old_min = 0;
+
+    for (int x1 = 4; x1 >= 0; x1--)
+    {
+        for (int r1 = 3; r1 >= 0; r1--)
+        {
+            bzero(&s, sizeof(t_sim));
+
+            ft_cpy_map(app->sim_map, app->map);  
+            ft_copy_max(app->sim_max, app->max);
+
+            ft_push_on_map(app, app->colors[0], x1, r1, &s);
+
+            int score_a = ft_contaminate(app->sim_map, s.y1, s.x1, app->colors[0].cA);
+            int score_b = ft_contaminate(app->sim_map, s.y2, s.x2, app->colors[0].cB);
+
+            double score = score_a + score_b;
+            int min = (s.y1 < s.y2) ? s.y1 : s.y2;
+
+            if (score > old_score && app->map[s.y1][s.x1] == '.' && app->map[s.y2][s.x2] == '.')
+            {
+                if (score_a < 4 && score_b < 4)
+                {
+                    old_min = min;
+                    old_score = score;
+                    app->rot = r1;
+                    app->col = s.x1;
+                }
+            }
+        }
+    }
+}
+
 
 void    ft_calcul_score(t_app *app)
 {
@@ -464,6 +540,8 @@ void    ft_calcul_score(t_app *app)
                     {
                         for (int r3 = 0; r3 < 4; r3++)
                         {
+                            if (ft_timer(app->time_begin) > 95.0)
+                                break;
                             bzero(&s, sizeof(t_sim));
                             bzero(&s1, sizeof(t_sim));
                             bzero(&s2, sizeof(t_sim));
@@ -512,8 +590,6 @@ void    ft_calcul_score(t_app *app)
                                     }
                                 }
                             }
-                            if (ft_timer(app->time_begin) > 95.0)
-                                break;
                         }
                     }
                 }
@@ -538,17 +614,22 @@ void    ft_run(t_app *app)
 
     if (app->n.deep == 1)
         app->old_deep = 10;
-    if (app->final_score > 0)
+    if (app->final_score > 100)
     {
         fprintf(stderr, "Col : %d | Rot : %d | Deep : %d | Score : %d\n", app->n.col, app->n.rot, app->n.deep, app->final_score);
         app->col = app->n.col;
         app->rot = app->n.rot;
     }
-    if (app->final_score == 0)
+    else
     {
         ft_cpy_map(app->sim_map, app->map); 
         ft_copy_max(app->sim_max, app->max);
-        ft_simulation_test(app);
+        if (app->step % 2 == 0)
+            ft_simulation_test1(app);
+        else
+            ft_simulation_test2(app);
+        if (app->col == -1)
+            ft_simulation_last(app);
     }
 }
 
@@ -584,9 +665,11 @@ int     main()
     bzero(&app, sizeof(t_app));
     ft_allocation(&app);
     app.old_deep = 10;
+    app.step = 0;
 
     while (1) 
     {
+        app.step++;
         app.time_begin = clock();
 
         app.colors = malloc(8 * sizeof(t_color));
