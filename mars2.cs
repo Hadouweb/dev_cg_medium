@@ -80,24 +80,30 @@ class Player
             int p = 0;
 
 
-            if (X - gX > 500)
-                r = 15;
-            else if (X - gX < -500)
-                r = -15;
-            else
-                r = 0;
+            int revDist = X - gX;
+            if (revDist >= 1500 && hSpeed <= 30)
+            {
+                r = -revDist / 90;
+            }
+            else if (revDist < 1500 && hSpeed > 20)
+                r = revDist / 90 * (hSpeed / 20);
+
+            if (revDist <= 1500 && hSpeed >= -30)
+            {
+                r = revDist / 90;
+            }
+            else if (revDist > 1500 && hSpeed < -20)
+                r = -revDist / 90 * 2;
             int dist = (X - gX > 0) ? X - gX : -(X - gX);
-             Console.Error.WriteLine("{0}, {1} {2}", X, Y, dist);
-            if (dist > 1000)
+
+            if (hSpeed <= 20 && hSpeed >= -20 && dist == 0)
+                r = 0;
+            Console.Error.WriteLine("{0} {1} {2} {3}", hSpeed, gX, revDist, dist);
+
+            if (vSpeed < 40 && vSpeed > -40)
                 p = 3;
-            else if (vSpeed > 60)
-                p = 3;
-            else if (vSpeed > 30)
-                p = 2;
-            else if (vSpeed > 10)
-                p = 2;
             else
-                p = 2;
+                p = 4;
 
             // rotate power. rotate is the desired rotation angle. power is the desired thrust power.
             Console.WriteLine("{0} {1}", r, p);
