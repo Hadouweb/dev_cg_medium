@@ -79,31 +79,61 @@ class Player
             int r = 0;
             int p = 0;
 
-
-            int revDist = X - gX;
-            if (revDist >= 1500 && hSpeed <= 30)
-            {
-                r = -revDist / 90;
-            }
-            else if (revDist < 1500 && hSpeed > 20)
-                r = revDist / 90 * (hSpeed / 20);
-
-            if (revDist <= 1500 && hSpeed >= -30)
-            {
-                r = revDist / 90;
-            }
-            else if (revDist > 1500 && hSpeed < -20)
-                r = -revDist / 90 * 2;
+            int relDist = X - gX;
             int dist = (X - gX > 0) ? X - gX : -(X - gX);
+            int distY = Y - gY;
+            if (vSpeed < 0)
+                vSpeed = -vSpeed;
+            Console.Error.WriteLine("{0} {1} {2} {3}", vSpeed, hSpeed, relDist, dist);
 
-            if (hSpeed <= 20 && hSpeed >= -20 && dist == 0)
-                r = 0;
-            Console.Error.WriteLine("{0} {1} {2} {3}", hSpeed, gX, revDist, dist);
-
-            if (vSpeed < 40 && vSpeed > -40)
+            r = 0;
+            if (relDist < 1000 && hSpeed > 20)
+            {
+                Console.Error.WriteLine("3");
+                r = hSpeed;
+            }
+            else if (relDist > -1000 && hSpeed < -20)
+            {
+                Console.Error.WriteLine("4");
+                r = hSpeed;
+            }
+            else if (relDist > 1000)
+            {
+                Console.Error.WriteLine("1");
+                r = -(relDist * 90 / 7000);
+            }
+            else if (relDist < -1000 )
+            {
+                Console.Error.WriteLine("2");
+                r = relDist * 90 / 7000;
+            }
+        
+            if (Y > 2800)
                 p = 3;
             else
                 p = 4;
+            if (relDist > -1000 && relDist < 1000 && hSpeed < 10)
+            {
+                p = (3000 / distY);
+            }
+            if (vSpeed > 20 && r > 45)
+                r = hSpeed - (vSpeed);
+            else if (vSpeed > 20 && r < -45)
+                r = hSpeed + (vSpeed);
+            if (vSpeed > 20)
+            {
+                p = 4;
+            }
+            else
+                p = 0;
+            if (distY < 500)
+                r = 0;
+            if (p > 4)
+                p = 4;
+            if (r > 90)
+                r = 90;
+            if (r < - 90)
+                r = - 90;
 
             // rotate power. rotate is the desired rotation angle. power is the desired thrust power.
             Console.WriteLine("{0} {1}", r, p);
