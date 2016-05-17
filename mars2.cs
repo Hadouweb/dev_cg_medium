@@ -9,63 +9,54 @@ using System.Collections.Generic;
  * Auto-generated code below aims at helping you parse
  * the standard input according to the problem statement.
  **/
-
-public class Coordinate
+ 
+public static class NumericExtensions
 {
-    public Coordinate(int _x, int _y)
+    public static double ToRadians(this double val)
     {
-        x = _x;
-        y = _y;
+        return (Math.PI / 180) * val;
     }
-    public int x { get; private set; }
-    public int y { get; private set; }
-}
-
+}  
+ 
 class Player
 {
     static void Main(string[] args)
     {
         string[] inputs;
         int surfaceN = int.Parse(Console.ReadLine()); // the number of points used to draw the surface of Mars.
-        int[,] map = new int[surfaceN,2];
-        int sY = 0;
-        int[,] goal = new int[2,2];
+        int ply = -1;
+        int plx = -1;
+        int spX, spY;
+        int spXmin = int.MaxValue/4;
+        int spXmax = int.MinValue/4;
         for (int i = 0; i < surfaceN; i++)
         {
             inputs = Console.ReadLine().Split(' ');
-            map[i,0] = int.Parse(inputs[0]);
-            map[i,1] = int.Parse(inputs[1]);
-            for (int j = 0; j < i; j++)
-            {
-                if (map[j, 1] == map[i, 1] && map[i, 1] != 0)
-                {
-                    sY = map[i, 1];
-                }
+            int landX = int.Parse(inputs[0]); // X coordinate of a surface point. (0 to 6999)
+            int landY = int.Parse(inputs[1]); // Y coordinate of a surface point. By linking all the points together in a sequential fashion, you form the surface of Mars.
+            if (ply == landY) {
+                if (spXmin > landX) spXmin=landX;
+                if (spXmax < landX) spXmax=landX;
+                if (spXmin > plx) spXmin=plx;
+                if (spXmax < plx) spXmax=plx;
+                spY = landY;
             }
-        }
-
-        int k = 0;
-        for (int i = 0; i < surfaceN; i++)
-        {
-            if (map[i, 1] == sY)
-            {
-                goal[k, 0] = map[i, 0];
-                goal[k, 1] = map[i, 1];
-                k++;
-                if (k == 2)
-                    k = 1;
-            }
-        }
-
-        for (int i = 0; i < 2; i++)
-        {
-            //Console.Error.WriteLine("__ {0}, {1}", goal[i, 0], goal[i, 1]);
+            ply = landY;
+            plx = landX;
         }
         
-        int gX = goal[0, 0] + ((goal[1, 0] - goal[0, 0]) / 2);
-        int gY = goal[0, 1]; 
-        Console.Error.WriteLine("__ {0}, {1}", gX, gY);
-
+        spX = (spXmin + spXmax)/2;
+        
+        int dlx = spXmax - spXmin;
+        int tlx = dlx/4;
+        
+        double g=3.711;
+        int ag0 = (int)(Math.Acos(g/4)*180/Math.PI);
+        
+        //As there is no mass nor angular inertia information, let's justjust use tweaking coeficient for horizontal speed / distance.
+        int step=0;
+        
+        // game loop
         while (true)
         {
             inputs = Console.ReadLine().Split(' ');
@@ -76,67 +67,72 @@ class Player
             int fuel = int.Parse(inputs[4]); // the quantity of remaining fuel in liters.
             int rotate = int.Parse(inputs[5]); // the rotation angle in degrees (-90 to 90).
             int power = int.Parse(inputs[6]); // the thrust power (0 to 4).
-            int r = 0;
-            int p = 0;
 
-            int relDist = X - gX;
-            int dist = (X - gX > 0) ? X - gX : -(X - gX);
-            int distY = Y - gY;
-            if (vSpeed < 0)
-                vSpeed = -vSpeed;
-            Console.Error.WriteLine("{0} {1} {2} {3}", vSpeed, hSpeed, relDist, dist);
+            // Write an action using Console.WriteLine()
 
-            r = 0;
-            if (relDist < 1000 && hSpeed > 20)
-            {
-                Console.Error.WriteLine("3");
-                r = hSpeed;
+            int thrust = 0;
+            
+            //The force of gravity, g = 3.711 m/s2 ...
+            //Time to splat: sqrt ( 2 * height / 9.8 ) ...
+            //Velocity at splat time: sqrt( 2 * g * height ) ...
+            
+            //t = [ −vi ± √(vi2 + 2gy) ]/g
+            
+            double ts = (Math.Sqrt(vSpeed*vSpeed+2*g*Y)+vSpeed)/g;
+            double vf=g*ts-vSpeed;
+            
+            int a=0;
+            int dx = spX-X;
+            double dvx = (hSpeed==0)? 0 : (double)dx/hSpeed;
+            double dvy = (dvx<0)? 0 : dvx*vSpeed;
+            double cdy = (Y + dvy - spY) / 200; 
+            int avY = (int)(ag0-2+((cdy>10)? 10 : ((cdy<-10)? -10 : cdy)));
+            
+            double ah = Math.Sin(((double)avY).ToRadians()) * 4;
+            
+            switch(step) {
+                case 0: // go toward landing spot.
+                double rc = hSpeed*hSpeed-1.8*Math.Abs(ah*dx);
+                if (rc > -5.0*Math.Abs(rc)*Math.Abs(hSpeed)/Math.Abs(dx)) {
+                    step=1;
+                    goto case 1;
+                }
+                step_02:
+                a = avY * ((dx>0)? -1:1);
+                thrust=4;
+                break;
+                
+                case 1:
+                if (Math.Abs(hSpeed)<3) {
+                    if (Math.Abs(dx-hSpeed*ts) < tlx) {
+                        step=2;
+                        goto case 2;
+                    } else {
+                        step=0;
+                        goto step_02;
+                    }
+                }
+                //a = -2*aMax*Dir;
+                a = avY*((hSpeed>0)? 1:-1);
+                thrust=4;
+                break;
+                
+                case 2:
+                a=0;
+                thrust = (vSpeed<=-32)? 4 : 0;
+                break;
             }
-            else if (relDist > -1000 && hSpeed < -20)
-            {
-                Console.Error.WriteLine("4");
-                r = hSpeed;
+    
+            Console.Error.WriteLine("dx={0} spx={1} vh2={2} rc={3} dvy={4} cdy={5}", dx, spX, hSpeed*hSpeed, 1.8*Math.Abs(ah*dx), dvy, cdy);
+            Console.Error.WriteLine("s={0} ts={1} vf={2} vi={3} th={4}", step, ts, vf,-vSpeed, thrust);
+            
+            if (thrust<0) { 
+                thrust = 0;
+            } else if (thrust>4) {
+                thrust = 4;
             }
-            else if (relDist > 1000)
-            {
-                Console.Error.WriteLine("1");
-                r = -(relDist * 90 / 7000);
-            }
-            else if (relDist < -1000 )
-            {
-                Console.Error.WriteLine("2");
-                r = relDist * 90 / 7000;
-            }
-        
-            if (Y > 2800)
-                p = 3;
-            else
-                p = 4;
-            if (relDist > -1000 && relDist < 1000 && hSpeed < 10)
-            {
-                p = (3000 / distY);
-            }
-            if (vSpeed > 20 && r > 45)
-                r = hSpeed - (vSpeed);
-            else if (vSpeed > 20 && r < -45)
-                r = hSpeed + (vSpeed);
-            if (vSpeed > 20)
-            {
-                p = 4;
-            }
-            else
-                p = 0;
-            if (distY < 500)
-                r = 0;
-            if (p > 4)
-                p = 4;
-            if (r > 90)
-                r = 90;
-            if (r < - 90)
-                r = - 90;
-
-            // rotate power. rotate is the desired rotation angle. power is the desired thrust power.
-            Console.WriteLine("{0} {1}", r, p);
+            Console.WriteLine(string.Format("{0} {1}", a, thrust)); // 2 integers: rotate power. rotate is the desired rotation angle (should be 0 for level 1), power is the desired thrust power (0 to 4).
+            //Console.WriteLine("-90 4"); // 2 integers: rotate power. rotate is the desired rotation angle (should be 0 for level 1), power is the desired thrust power (0 to 4).
         }
     }
 }
